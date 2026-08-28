@@ -19,6 +19,9 @@
 	grid_height = 32
 	unarmed_bonus = 1.2
 
+/obj/item/clothing/gloves/roguetown/plate/ComponentInitialize()
+	AddComponent(/datum/component/armour_filtering/positive, TRAIT_FENCERDEXTERITY)
+
 /obj/item/clothing/gloves/roguetown/plate/iron
 	name = "iron plate gauntlets"
 	desc = "Plate gauntlets made out of iron. Good all-around protection for the hands. Slightly less durable than its steel counterpart."
@@ -44,6 +47,7 @@
 	name = "vicious gauntlets"
 	desc = "Plate gauntlets which carry the motive force of this world, violence."
 	max_integrity = ARMOR_INT_SIDE_ANTAG
+	armor = ARMOR_ASCENDANT
 	icon_state = "graggarplategloves"
 
 /obj/item/clothing/gloves/roguetown/plate/graggar/Initialize(mapload)

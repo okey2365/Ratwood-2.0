@@ -352,9 +352,6 @@
 		else
 			to_chat(user, span_notice("This writ has not yet been signed."))
 
-/obj/item/paper/inqslip/examine(mob/user)
-	. = ..()
-	. += span_notice(desc)
 
 /obj/item/paper/inqslip/proc/attemptsign(mob/user, mob/living/carbon/human/M)
 	if(sliptype == 2)
@@ -599,7 +596,7 @@
 /obj/item/paper/scroll/writ_of_esteem/grenzel
 	desc = "A formal Writ of Esteem used to showcase an envoy's authenticity.This one bears the signet of the Grenzelhoft Holy See."
 	info = "By the command of his Imperial Majesty, through the Council of Electors, does bestow this writ. Let it be known that the bearer of this writ is empowered to negotiate,\
-	speak, and act in the Emperor’s stead as if it were His Majesty’s own words. None shall gainsay this authority, under seal and witness of the Electors assembled.\
+	speak, and act in the Emperor's stead as if it were His Majesty's own words. None shall gainsay this authority, under seal and witness of the Electors assembled.\
 	Verdinand III, Emperor of The Holy See of Grenzelhoft."
 	icon_state = "contractsigned"
 

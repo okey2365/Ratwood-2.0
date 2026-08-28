@@ -55,6 +55,9 @@
 	color = "#bb9696"
 	anvilrepair = null
 
+/obj/item/clothing/wrists/roguetown/bracers/ComponentInitialize()
+	AddComponent(/datum/component/armour_filtering/negative, TRAIT_FENCERDEXTERITY)
+
 /obj/item/clothing/wrists/roguetown/bracers/psythorns
 	name = "psydonic thorns"
 	desc = "Thorns fashioned from pliable yet durable blacksteel - woven and interlinked, fashioned to be wrapped around the wrists."
@@ -92,7 +95,8 @@
 	desc = "Standard leather bracers that offer some meager protection for the arms."
 	icon_state = "lbracers"
 	item_state = "lbracers"
-	armor = ARMOR_PADDED_GOOD
+	max_integrity = ARMOR_INT_SIDE_LEATHER
+	armor = ARMOR_LEATHER
 	prevent_crits = list(BCLASS_CUT, BCLASS_STAB, BCLASS_BLUNT, BCLASS_TWIST)
 	blocksound = SOFTHIT
 	blade_dulling = DULLING_BASHCHOP
@@ -109,6 +113,9 @@
 	color = "#684338"
 	cold_protection = ARM_LEFT | ARM_RIGHT
 	min_cold_protection_temperature = BODYTEMP_COLD_LEVEL_ONE_MAX
+
+/obj/item/clothing/wrists/roguetown/bracers/leather/ComponentInitialize()
+	AddComponent(/datum/component/armour_filtering/positive, TRAIT_FENCERDEXTERITY)
 
 /obj/item/clothing/wrists/roguetown/bracers/leather/heavy
 	name = "hardened leather bracers"
@@ -223,7 +230,7 @@
 	body_parts_covered = ARMS
 	icon_state = "splintarms"
 	item_state = "splintarms"
-	armor = ARMOR_PLATE
+	armor = ARMOR_LEATHER_STUDDED
 	prevent_crits = list(BCLASS_CUT, BCLASS_STAB, BCLASS_CHOP, BCLASS_BLUNT)
 	blocksound = SOFTHIT
 	max_integrity = ARMOR_INT_SIDE_IRON
@@ -232,6 +239,9 @@
 	w_class = WEIGHT_CLASS_NORMAL
 	resistance_flags = FIRE_PROOF
 	sewrepair = FALSE
+
+/obj/item/clothing/wrists/roguetown/splintarms/ComponentInitialize()
+	AddComponent(/datum/component/armour_filtering/negative, TRAIT_FENCERDEXTERITY)
 
 /obj/item/clothing/wrists/roguetown/splintarms/iron
 	name = "splint bracers"
@@ -263,6 +273,9 @@
 	pickup_sound = 'sound/foley/equip/equip_armor_chain.ogg'
 	equip_sound = 'sound/foley/equip/equip_armor_chain.ogg'
 	smeltresult = null
+
+/obj/item/clothing/wrists/roguetown/bracers/jackchain/ComponentInitialize()
+	AddComponent(/datum/component/armour_filtering/positive, TRAIT_FENCERDEXTERITY)
 
 /obj/item/clothing/wrists/roguetown/gem
 	name = "gem bracelet base"

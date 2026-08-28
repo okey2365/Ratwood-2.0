@@ -246,10 +246,13 @@ SAVEFILE UPDATING/VERSIONING - 'Simplified', or rather, more coder-friendly ~Car
 	S["anonymize"]			>> anonymize
 	S["ghost_protection"]	>> ghost_protection
 	S["masked_examine"]		>> masked_examine
+	S["show_mouseover_role"] >> show_mouseover_role
 	S["nsfw_examine_always"]>> nsfw_examine_always
 	S["wildshape_name"]		>> wildshape_name
 	S["mute_animal_emotes"]	>> mute_animal_emotes
 	S["autoconsume"]		>> autoconsume
+	S["autowoodcut"]		>> autowoodcut
+	S["autopicking"]		>> autopicking
 	S["no_examine_blocks"]	>> no_examine_blocks
 	S["no_autopunctuate"]	>> no_autopunctuate
 	S["no_language_fonts"]	>> no_language_fonts
@@ -263,7 +266,11 @@ SAVEFILE UPDATING/VERSIONING - 'Simplified', or rather, more coder-friendly ~Car
 	S["chastity_hardmode"]	>> chastity_hardmode
 	S["extreme_erp"]		>> extreme_erp
 	S["edging"]				>> edging
+	S["sensitive_brands"] 	>> sensitive_brands
+	S["facial_brands"] 		>> facial_brands
+	S["cursed_collarable"] 	>> cursed_collarable
 	S["shake"]				>> shake
+	S["no_redflash"] 		>> no_redflash
 	S["mastervol"]			>> mastervol
 	S["lastclass"]			>> lastclass
 	S["runmode"]			>> runmode
@@ -318,6 +325,7 @@ SAVEFILE UPDATING/VERSIONING - 'Simplified', or rather, more coder-friendly ~Car
 	chat_on_map		= sanitize_integer(chat_on_map, 0, 1, initial(chat_on_map))
 	showrolls		= sanitize_integer(showrolls, 0, 1, initial(showrolls))
 	chatheadshot	= sanitize_integer(chatheadshot, 0, 1, initial(chatheadshot))
+	show_mouseover_role = sanitize_integer(show_mouseover_role, 0, 1, initial(show_mouseover_role))
 	chastity_hardmode = sanitize_integer(chastity_hardmode, CHASTITY_HARDMODE_DISABLED, CHASTITY_HARDMODE_ENABLED, initial(chastity_hardmode))
 	max_chat_length = sanitize_integer(max_chat_length, 1, CHAT_MESSAGE_MAX_LENGTH, initial(max_chat_length))
 	see_chat_non_mob	= sanitize_integer(see_chat_non_mob, 0, 1, initial(see_chat_non_mob))
@@ -373,6 +381,25 @@ SAVEFILE UPDATING/VERSIONING - 'Simplified', or rather, more coder-friendly ~Car
 			key_bindings -= key
 	// End
 
+/client/verb/export_savefile()
+	set name = "Export Preferences"
+	set desc = "Export your preferences to a file."
+	set category = "OOC"
+	if(!prefs.path)
+		return
+
+	if(alert("Are you sure you want to export your preferences? This will create a file on your computer that contains your preferences.", "Export Preferences", "Yes", "No") == "No")
+		return
+
+	if(!fexists(prefs.path))
+		to_chat(src, span_warning("No savefile, what?!"))
+		return
+
+	var/file_name = "[ckey].sav"
+	var/exportable_file = file(prefs.path)
+
+	DIRECT_OUTPUT(src, ftp(exportable_file, file_name))
+
 /datum/preferences/proc/save_preferences()
 	if(!path)
 		return FALSE
@@ -394,10 +421,13 @@ SAVEFILE UPDATING/VERSIONING - 'Simplified', or rather, more coder-friendly ~Car
 	WRITE_FILE(S["ambiencevol"], ambiencevol)
 	WRITE_FILE(S["anonymize"], anonymize)
 	WRITE_FILE(S["masked_examine"], masked_examine)
+	WRITE_FILE(S["show_mouseover_role"], show_mouseover_role)
 	WRITE_FILE(S["nsfw_examine_always"], nsfw_examine_always)
 	WRITE_FILE(S["wildshape_name"], wildshape_name)
 	WRITE_FILE(S["mute_animal_emotes"], mute_animal_emotes)
 	WRITE_FILE(S["autoconsume"], autoconsume)
+	WRITE_FILE(S["autowoodcut"], autowoodcut)
+	WRITE_FILE(S["autopicking"], autopicking)
 	WRITE_FILE(S["no_examine_blocks"], no_examine_blocks)
 	WRITE_FILE(S["no_autopunctuate"], no_autopunctuate)
 	WRITE_FILE(S["no_language_fonts"], no_language_fonts)
@@ -410,7 +440,11 @@ SAVEFILE UPDATING/VERSIONING - 'Simplified', or rather, more coder-friendly ~Car
 	WRITE_FILE(S["chastity_hardmode"], chastity_hardmode)
 	WRITE_FILE(S["extreme_erp"], extreme_erp)
 	WRITE_FILE(S["edging"], edging)
+	WRITE_FILE(S["sensitive_brands"], sensitive_brands)
+	WRITE_FILE(S["facial_brands"], facial_brands)
+	WRITE_FILE(S["cursed_collarable"], cursed_collarable)
 	WRITE_FILE(S["shake"], shake)
+	WRITE_FILE(S["no_redflash"], no_redflash)
 	WRITE_FILE(S["lastclass"], lastclass)
 	WRITE_FILE(S["mastervol"], mastervol)
 	WRITE_FILE(S["ooccolor"], ooccolor)
@@ -718,7 +752,7 @@ SAVEFILE UPDATING/VERSIONING - 'Simplified', or rather, more coder-friendly ~Car
 	S["bark_speed"] >> bark_speed
 	S["bark_pitch"] >> bark_pitch
 	S["bark_variance"] >> bark_variance
-	hear_barks = TRUE
+	S["hear_barks"] >> hear_barks
 
 	if(!(bark_id in GLOB.bark_list))
 		bark_id = pick(GLOB.bark_random_list)

@@ -33,7 +33,7 @@
 /obj/item/needle
 	name = "needle"
 	icon_state = "needle"
-	desc = "This sharp needle can sew wounds, mend clothing, and stab someone if you’re desperate."
+	desc = "This sharp needle can sew wounds, mend clothing, and stab someone if you're desperate."
 	icon = 'icons/roguetown/items/misc.dmi'
 	lefthand_file = 'icons/mob/inhands/misc/food_lefthand.dmi'
 	righthand_file = 'icons/mob/inhands/misc/food_righthand.dmi'
@@ -203,6 +203,11 @@
 	var/list/sewable
 	var/obj/item/bodypart/affecting
 	if(iscarbon(patient))
+		//OV edit
+		if(isooze(patient))
+			to_chat(doctor, span_warning("You can't sew an Ooze, their wounds must be burned closed."))
+			return FALSE
+		//OV edit end
 		affecting = patient.get_bodypart(check_zone(doctor.zone_selected))
 		if(!affecting)
 			to_chat(doctor, span_warning("That limb is missing."))

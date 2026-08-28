@@ -220,7 +220,7 @@ GLOBAL_VAR_INIT(rpg_loot_items, FALSE)
 	var/list/examine_effects = list()
 
 	///played when an item that is equipped blocks a hit
-	var/list/blocksound
+	var/blocksound
 
 	var/thrown_damage_flag = "blunt"
 
@@ -897,25 +897,6 @@ GLOBAL_VAR_INIT(rpg_loot_items, FALSE)
 
 /obj/item/proc/allow_attack_hand_drop(mob/user)
 	return TRUE
-
-/obj/item/attack_paw(mob/user)
-	if(!user)
-		return
-	if(anchored)
-		return
-
-	SEND_SIGNAL(loc, COMSIG_TRY_STORAGE_TAKE, src, user.loc, TRUE)
-
-	if(throwing)
-		throwing.finalize(FALSE)
-	if(loc == user)
-		if(!user.temporarilyRemoveItemFromInventory(src))
-			return
-
-	pickup(user)
-	add_fingerprint(user)
-	if(!user.put_in_active_hand(src, FALSE, FALSE))
-		user.dropItemToGround(src)
 
 /obj/item/proc/GetDeconstructableContents()
 	return GetAllContents() - src
@@ -1772,6 +1753,7 @@ GLOBAL_VAR_INIT(rpg_loot_items, FALSE)
 	return "<br><b><u>THERMAL RESISTANCE:</u></b><br>" + jointext(out, "<br>")
 
 /obj/item/obj_break(damage_flag)
+	lose_polish()//call to remove polish bonus on armor/weaps when broken. lives in /blacksmith/items.dm
 	..()
 
 	update_damaged_state()
@@ -1791,6 +1773,8 @@ GLOBAL_VAR_INIT(rpg_loot_items, FALSE)
 		obj_integrity = max_integrity * 0.6
 
 /obj/item/obj_destruction(damage_flag)
+	if (obj_flags & PREVENTS_DESTRUCTION)
+		return FALSE
 	if (damage_flag == "acid")
 		obj_destroyed = TRUE
 		acid_melt()
@@ -1799,7 +1783,7 @@ GLOBAL_VAR_INIT(rpg_loot_items, FALSE)
 		obj_destroyed = TRUE
 		burn()
 		return TRUE
-	if (ismob(loc) && !always_destroy)
+	if (!always_destroy && (ismob(loc) || isclothing(src) || istype(src, /obj/item/rogueweapon)))
 		return FALSE
 
 	obj_destroyed = TRUE
@@ -1959,4 +1943,3 @@ GLOBAL_VAR_INIT(rpg_loot_items, FALSE)
 	if(desc != initial(desc))
 		return TRUE
 	return FALSE
-

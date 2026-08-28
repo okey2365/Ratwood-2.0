@@ -189,8 +189,7 @@ GLOBAL_LIST_EMPTY(instrument_band_lobbies)
 	if(!channel)
 		channel = _get_sound_group()?.checkout_channel()
 		if(!channel)
-			var/atom/resolved_parent = parent?.resolve()
-			log_game("INSTRUMENT: All [/datum/sound_group/instruments::channel_count] instrument channels in use simultaneously - [resolved_parent]")
+			log_game("INSTRUMENT: All [/datum/sound_group/instruments::channel_count] instrument channels in use simultaneously - [parent]")
 			return FALSE
 	..()
 	return TRUE
@@ -443,8 +442,7 @@ GLOBAL_LIST_EMPTY(instrument_band_lobbies)
 				user.remove_status_effect(/datum/status_effect/buff/playing_music)
 				return
 			if(curfile)
-				soundloop.mid_sounds = list(curfile)
-				soundloop.cursound = null
+				soundloop.set_mid_sounds(list(curfile))
 				soundloop.volume = clamp(curvol, 10, 100)
 				soundloop.repeat_sound = loop_enabled
 				if(!soundloop.start(user))
@@ -621,8 +619,7 @@ GLOBAL_LIST_EMPTY(instrument_band_lobbies)
 				var/mob/living/band_mob = instrument_to_bandmate[band_instrument]
 				if(band_mob)
 					play_source = band_mob
-			band_instrument.soundloop.mid_sounds = list(band_instrument.curfile)
-			band_instrument.soundloop.cursound = null
+			band_instrument.soundloop.set_mid_sounds(list(band_instrument.curfile))
 			band_instrument.soundloop.volume = clamp(band_instrument.curvol, 10, 100)
 			band_instrument.soundloop.repeat_sound = band_instrument.loop_enabled
 			if(!band_instrument.soundloop.start(play_source, sync_anchor))
@@ -753,6 +750,35 @@ GLOBAL_LIST_EMPTY(instrument_band_lobbies)
 	"Becalmed" = 'sound/music/instruments/hurdy (4).ogg',
 	"The Bloody Throne" = 'sound/music/instruments/hurdy (5).ogg',
 	"We Shall Sail Together" = 'sound/music/instruments/hurdy (6).ogg')
+
+/obj/item/rogue/instrument/ztratocaster
+	name = "ztratocaster"
+	desc = "A strange guitar-like instrument with two necks, and a body sharp enough to shred."
+	icon_state = "ztratocaster"
+	force = 15
+	force_wielded = 35
+	possible_item_intents = list(/datum/intent/axe/cut, /datum/intent/axe/chop, SPEAR_BASH)
+	gripped_intents = list(/datum/intent/axe/cut/battle/greataxe, /datum/intent/axe/chop/battle/greataxe, SPEAR_BASH)
+	associated_skill = /datum/skill/combat/axes
+	song_list = list("Laid To Rest" = 'sound/music/instruments/ztrato (1).ogg',
+	"Fulmen" = 'sound/music/instruments/ztrato (2).ogg',
+	"Painkiller" = 'sound/music/instruments/ztrato (3).ogg',
+	"Abyssor's Bane" = 'sound/music/instruments/ztrato (4).ogg')
+	blade_dulling = DULLING_BASHCHOP
+	w_class = WEIGHT_CLASS_HUGE
+	minstr = 8
+	max_blade_int = 300
+	anvilrepair = /datum/skill/craft/weaponsmithing
+	obj_flags = CAN_BE_HIT | PREVENTS_DESTRUCTION
+	integrity_failure = 0.2
+	smeltresult = null
+	wdefense = 6
+	wbalance = WBALANCE_HEAVY
+
+/obj/item/rogue/instrument/ztratocaster/Initialize(mapload)
+	. = ..()
+	soundloop.extra_range = 5 //stop blowing up my ears ser
+	AddComponent(/datum/component/cursed_item, TRAIT_CABAL, "INSTRUMENT")
 
 /obj/item/rogue/instrument/lute
 	name = "lute"

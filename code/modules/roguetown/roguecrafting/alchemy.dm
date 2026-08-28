@@ -87,7 +87,7 @@
 /datum/crafting_recipe/roguetown/alchemy/menthazig
 	name = "handmade mentha zig"
 	category = "Table"
-	result = list(/obj/item/clothing/mask/cigarette/rollie/mentha/crafted)
+	result = list(/obj/item/clothing/mask/cigarette/rollie/mentha)
 	reqs = list(/obj/item/clothing/mask/cigarette/rollie/nicotine = 1, /obj/item/alch/mentha = 1)
 	craftdiff = 1
 
@@ -202,6 +202,14 @@
 	category = "Transmutation"
 	result = list(/obj/item/natural/stone = 1)
 	reqs = list(/obj/item/natural/clay = 2)
+	craftdiff = 2
+	verbage_simple = "transmute"
+
+/datum/crafting_recipe/roguetown/alchemy/s2cto
+	name = "stone to clay"
+	category = "Transmutation"
+	result = list(/obj/item/natural/clay = 2)
+	reqs = list(/obj/item/natural/stone = 1)
 	craftdiff = 2
 	verbage_simple = "transmute"
 

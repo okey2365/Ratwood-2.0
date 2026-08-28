@@ -3,8 +3,8 @@
 	flag = GNOLL
 	antag_job = TRUE
 	faction = "Station"
-	total_positions = 1
-	spawn_positions = 1
+	total_positions = 0
+	spawn_positions = 0
 	allowed_races = RACES_NO_CONSTRUCT
 	tutorial = "You have proven yourself worthy to Graggar, and he's granted you his blessing most divine. Now you hunt for worthy opponents, seeking out those strong enough to make you bleed."
 	outfit = null
@@ -51,7 +51,7 @@
 
 	// Species swaps do not always clear extra body zones from prior forms.
 	// Purge lamia/taur leftovers so gnolls only use gnoll body setup.
-	clear_non_gnoll_bodyparts()
+	ensure_not_taur()
 
 	reset_gnoll_sprite_scale()
 
@@ -113,6 +113,7 @@
 		var/obj/item/organ/testicles/testicles = getorganslot(ORGAN_SLOT_TESTICLES)
 		if(!testicles)
 			testicles = new()
+			testicles.ball_size = MAX_TESTICLES_SIZE
 			testicles.Insert(src, TRUE, FALSE)
 	else if(penis)
 		penis.Remove(src)
@@ -153,16 +154,6 @@
 	add_mob_descriptor(prefs.descriptor_expression || /datum/mob_descriptor/face_exp/gnoll/alert)
 	return TRUE
 
-/mob/living/carbon/human/proc/clear_non_gnoll_bodyparts()
-	for(var/obj/item/bodypart/part as anything in bodyparts.Copy())
-		if(part.body_zone != BODY_ZONE_TAUR)
-			continue
-		part.drop_limb(1)
-		qdel(part)
-
-	// Taur bodies replace both legs, so restore a standard biped layout.
-	ensure_not_taur()
-
 /mob/living/carbon/human/proc/reset_gnoll_sprite_scale()
 	if(!dna?.features)
 		return FALSE
@@ -194,13 +185,6 @@
 			+ span_notice("Rather, it is best to seek the worthiest among your prey, and to ensure a thrilling hunt for all involved."))
 		to_chat(H, span_biginfo("*-------*"))
 
-		var/mode = SSgnoll_scaling.get_gnoll_scaling()
-		if(mode == GNOLL_SCALING_NONE)
-			to_chat(H, span_smallnotice("There will not be any gnoll reinforcements this week, as far as I can tell. ") + span_info("I must rely on cunning over numbers."))
-		else if(mode != GNOLL_SCALING_DOUBLE)
-			to_chat(H, span_smallnotice("I can expect to be joined by my pack this week. ") + span_info("I should wait for them and group up."))
-		else
-			to_chat(H, span_smallnotice("My pack is small this week. ") + span_info("I should regroup with the other gnolls, and avoid reckless fights until we can hunt together."))
 		to_chat(H, span_info("Patience and careful planning are the virtues of my craft. If I can't isolate my mark, it would be wise to stalk another. \n\
 									When tracking difficult marks, I should set up camp and make alliances out in the field."))
 		to_chat(H, span_warning("The Bandit filth are unworthy of my assistance."))

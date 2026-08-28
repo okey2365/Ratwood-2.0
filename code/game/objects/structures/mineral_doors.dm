@@ -233,6 +233,8 @@
 	if(ismob(AM))
 		var/mob/user = AM
 		if(HAS_TRAIT(user, TRAIT_BASHDOORS))
+			// Throwing your weight through a door is not a subtle act, so it should break invisibility
+			user.break_invisibility()
 			if(locked)
 				user.visible_message(span_warning("[user] bashes into [src]!"))
 				take_damage(200, "brute", "blunt", 1)
@@ -254,9 +256,6 @@
 				else
 					addtimer(CALLBACK(src, PROC_REF(Close), FALSE), 25)
 
-
-/obj/structure/mineral_door/attack_paw(mob/user)
-	return attack_hand(user)
 
 /obj/structure/mineral_door/attack_hand(mob/user)
 	. = ..()

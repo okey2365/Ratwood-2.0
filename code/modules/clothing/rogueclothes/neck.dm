@@ -87,6 +87,7 @@
 	blocksound = SOFTHIT
 	body_parts_covered = NECK|HAIR|EARS|HEAD
 	armor = ARMOR_PADDED_BAD
+	max_integrity = ARMOR_INT_CHEST_LIGHT_BASE
 	prevent_crits = list(BCLASS_CUT, BCLASS_BLUNT)
 	adjustable = CAN_CADJUST
 	toggle_icon_state = TRUE
@@ -102,7 +103,9 @@
 	color = "#ad977d"
 	body_parts_covered = NECK|HAIR|EARS|HEAD
 	armor = ARMOR_PADDED //gambeson for head
+	max_integrity = ARMOR_INT_CHEST_LIGHT_MEDIUM
 	prevent_crits = list(BCLASS_CUT, BCLASS_BLUNT)
+	resistance_flags = FIRE_PROOF
 
 /obj/item/clothing/neck/roguetown/coif/heavypadding
 	name = "heavy padded coif"
@@ -114,6 +117,9 @@
 	slot_flags = ITEM_SLOT_NECK|ITEM_SLOT_HEAD
 	body_parts_covered = NECK|HAIR|EARS|HEAD|MOUTH
 	armor = ARMOR_PADDED_GOOD //full padded gambeson basically
+	max_integrity = ARMOR_INT_CHEST_LIGHT_MASTER
+	prevent_crits = list(BCLASS_CUT, BCLASS_BLUNT, BCLASS_CHOP)
+	resistance_flags = FIRE_PROOF
 
 /obj/item/clothing/neck/roguetown/coif/heavypadding/ComponentInitialize()
 	return
@@ -149,6 +155,7 @@
 
 /obj/item/clothing/neck/roguetown/coif/ComponentInitialize()
 	AddComponent(/datum/component/adjustable_clothing, NECK, null, null, null, null, (UPD_HEAD|UPD_MASK|UPD_NECK))	//Soundless coif
+	AddComponent(/datum/component/armour_filtering/positive, TRAIT_FENCERDEXTERITY)
 
 /obj/item/clothing/neck/roguetown/leather
 	name = "hardened leather gorget"
@@ -165,6 +172,7 @@
 	max_integrity = ARMOR_INT_SIDE_HARDLEATHER
 	salvage_result = /obj/item/natural/hide/cured
 	salvage_amount = 1
+	resistance_flags = FIRE_PROOF
 
 /obj/item/clothing/neck/roguetown/chaincoif
 	name = "chain coif"
@@ -189,10 +197,11 @@
 
 /obj/item/clothing/neck/roguetown/chaincoif/ComponentInitialize()
 	AddComponent(/datum/component/adjustable_clothing, NECK, null, null, 'sound/foley/equip/chain_equip.ogg', null, (UPD_HEAD|UPD_MASK|UPD_NECK))	//Chain coif.
+	AddComponent(/datum/component/armour_filtering/negative, TRAIT_FENCERDEXTERITY)
 
 /obj/item/clothing/neck/roguetown/chaincoif/ancient
 	name = "ancient coif"
-	desc = "Polished gilbranze rings, linked together to form a billowing hood. Let it not be a crown of thorns that saves this dying world, but a crown of progress; of fettered metal and stained bone, rejuvenated by Zizo's will to herald Her greatest works yet."
+	desc = "Polished gilbranze rings, linked together to form a billowing hood. Let it not be a crown of thorns that saves this dying world, but a crown of ambition; of fettered metal and stained bone, rejuvenated by Zizo's will to herald Her greatest works yet."
 	icon_state = "achaincoif"
 	smeltresult = /obj/item/ingot/aaslag
 
@@ -216,6 +225,7 @@
 
 /obj/item/clothing/neck/roguetown/chaincoif/chainmantle/ComponentInitialize()
 	AddComponent(/datum/component/adjustable_clothing, (NECK), null, null, 'sound/foley/equip/equip_armor_chain.ogg', null, (UPD_HEAD|UPD_MASK|UPD_NECK))	//Chain coif.
+	AddComponent(/datum/component/armour_filtering/negative, TRAIT_FENCERDEXTERITY)
 
 /obj/item/clothing/neck/roguetown/chaincoif/iron
 	name = "iron chain coif"
@@ -289,6 +299,7 @@
 
 /obj/item/clothing/neck/roguetown/bevor/ComponentInitialize()
 	AddComponent(/datum/component/adjustable_clothing, NECK, null, null, 'sound/items/visor.ogg', null, (UPD_HEAD|UPD_MASK|UPD_NECK)) // adjustable falling buffe for the bevor
+	AddComponent(/datum/component/armour_filtering/positive, TRAIT_FENCERDEXTERITY)
 
 /obj/item/clothing/neck/roguetown/bevor/iron
 	name = "iron bevor"
@@ -415,13 +426,6 @@
 /obj/item/clothing/neck/roguetown/gorget/cursed_collar/Initialize(mapload)
 	. = ..()
 	ADD_TRAIT(src, TRAIT_NO_SELF_UNEQUIP, CURSED_ITEM_TRAIT)
-/*
-/obj/item/clothing/neck/roguetown/gorget/cursed_collar/dropped(mob/living/carbon/human/user)
-	. = ..()
-	if(QDELETED(src))
-		return
-	qdel(src)
-*/
 
 /obj/item/clothing/neck/roguetown/psicross
 	name = "psycross"
@@ -457,12 +461,12 @@
 
 /obj/item/clothing/neck/roguetown/psicross/inhumen
 	name = "inverted psycross"
-	desc = "A symbol of progress from an era that had reason to believe in it."
+	desc = "A symbol of ambition from an era that had reason to believe in it."
 	icon_state = "zcross_iron"
 
 /obj/item/clothing/neck/roguetown/psicross/inhumen/ancient
 	name = "ancient zcross"
-	desc = "'Progress. Ascension. Destiny. A mandate, commanded by God, to be fulfilled by Man. She called us forth from the edge of reality - and with Her dying breath, rasped out the final truth; the fire is gone, and the world will soon follow.'"
+	desc = "'Ambition. Destiny. Ascension. A mandate, commanded by God, to be fulfilled by Man. She called us forth from the edge of reality - and with Her dying breath, rasped out the final truth; the fire is gone, and the world will soon follow.'"
 	icon_state = "zcross_a"
 	color = "#bb9696"
 
@@ -551,6 +555,16 @@
 	item_state = "psycross_s"
 	sellprice = 50
 	is_silver = TRUE
+
+/obj/item/clothing/neck/roguetown/psicross/silver/equipped(mob/user, slot)
+	. = ..()
+	if(isliving(user) && (slot_flags & slotdefine2slotbit(slot))) //worn in a slot this cross actually goes in
+		ADD_TRAIT(user, TRAIT_WORN_SILVER_PSICROSS, REF(src))
+
+/obj/item/clothing/neck/roguetown/psicross/silver/dropped(mob/user)
+	. = ..()
+	if(isliving(user))
+		REMOVE_TRAIT(user, TRAIT_WORN_SILVER_PSICROSS, REF(src))
 
 /obj/item/clothing/neck/roguetown/psicross/g
 	name = "golden psycross"
@@ -783,7 +797,7 @@
 	grid_height = 32
 	var/goodluckactivated = FALSE
 	salvage_result = /obj/item/natural/fibers
-	salvage_result = 1
+	salvage_amount = 1
 	nudist_approved = TRUE
 
 /obj/item/clothing/neck/roguetown/luckcharm/equipped(mob/living/carbon/human/user, slot)
@@ -1135,7 +1149,7 @@
 	slot_flags = ITEM_SLOT_NECK
 	sellprice = 20
 
-// AP port. 
+// AP port.
 
 /obj/item/clothing/neck/roguetown/psicross/inhumen/g
 	name = "golden inverted psycross"

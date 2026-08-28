@@ -326,6 +326,14 @@
 /obj/item/clothing/suit/roguetown/shirt/undershirt/sailor
 	icon_state = "sailorblues"
 
+/obj/item/clothing/suit/roguetown/shirt/undershirt/sailor/colored
+	name = "striped shirt"
+	icon_state = "sailorcolorable"
+	item_state = "sailorcolorable"
+	detail_tag = "_detail"
+	detail_color = CLOTHING_BLACK
+	boobed_detail = FALSE
+
 /obj/item/clothing/suit/roguetown/shirt/undershirt/sailor/red
 	icon_state = "sailorreds"
 
@@ -786,7 +794,7 @@
 	. = ..()
 	ADD_TRAIT(src, TRAIT_NODROP, CURSED_ITEM_TRAIT)
 
-/obj/item/clothing/suit/roguetown/shirt/easttats/easttats/dropped(mob/living/carbon/human/user)
+/obj/item/clothing/suit/roguetown/shirt/undershirt/easttats/dropped(mob/living/carbon/human/user)
 	. = ..()
 	if(QDELETED(src))
 		return
@@ -796,6 +804,7 @@
 /obj/item/clothing/suit/roguetown/shirt/undershirt/easttats/take_damage(damage_amount, damage_type, damage_flag, sound_effect, attack_dir, armor_penetration)
 	. = ..()
 	if(obj_integrity < max_integrity)
+		last_repair = world.time
 		START_PROCESSING(SSobj, src)
 		return
 
@@ -806,5 +815,6 @@
 		return
 	else if(world.time > src.last_repair + src.repair_time)
 		src.last_repair = world.time
+		src.visible_message(span_notice("The [src] begin to swirl, repairing their integrity..."), vision_distance = 1)
 		obj_integrity = min(obj_integrity + src.repair_amount, src.max_integrity)
 	..()

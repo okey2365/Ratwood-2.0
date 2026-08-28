@@ -25,6 +25,7 @@
 /obj/item/clothing/suit/roguetown/armor/plate/ComponentInitialize()
 	. = ..()
 	AddComponent(/datum/component/item_equipped_movement_rustle, SFX_PLATE_STEP)
+	AddComponent(/datum/component/armour_filtering/negative, TRAIT_FENCERDEXTERITY)
 
 /obj/item/clothing/suit/roguetown/armor/plate/iron
 	name = "iron half-plate"
@@ -38,7 +39,7 @@
 
 /obj/item/clothing/suit/roguetown/armor/plate/ancient
 	name = "ancient half-plate"
-	desc = "Polished gilbranze layers, magewelded into plate armor. Let none impede the march of progress, and let Her champions bring the unenlightened masses to kneel."
+	desc = "Polished gilbranze layers, magewelded into plate armor. Let none impede the march of ambition, and let Her champions bring the unenlightened masses to kneel."
 	icon_state = "ancientplate"
 	item_state = "ancientplate"
 	smeltresult = /obj/item/ingot/aaslag
@@ -183,9 +184,9 @@
 	name = "vicious half-plate"
 	desc = "A fluted half-plate armour-set which stirs with the same violence driving our world. This inner motive makes it far less restrictive."
 	armor_class = ARMOR_CLASS_MEDIUM
-	max_integrity = ARMOR_INT_CHEST_PLATE_STEEL // We are probably one of the best medium armor sets. At higher integ than most(heavy armor levels, pretty much. But worse resistances, we get the bonus over the other sets of being medium and being unequippable.)
+	max_integrity = ARMOR_INT_CHEST_PLATE_STEEL // We are probably one of the best medium armor sets. At higher integ than most.
+	armor = ARMOR_ASCENDANT
 	icon_state = "graggarplate"
-	armor = ARMOR_CUIRASS
 
 /obj/item/clothing/suit/roguetown/armor/plate/fluted/graggar/Initialize(mapload)
 	. = ..()
@@ -201,15 +202,8 @@
 	max_integrity = ARMOR_INT_CHEST_PLATE_PSYDON
 	is_silver = TRUE
 
-/obj/item/clothing/suit/roguetown/armor/plate/fluted/ornate/equipped(mob/living/user, slot)
-	. = ..()
-	if(slot == SLOT_ARMOR)
-		user.apply_status_effect(/datum/status_effect/buff/psydonic_endurance)
-
-/obj/item/clothing/suit/roguetown/armor/plate/fluted/ornate/dropped(mob/living/carbon/human/user)
-	. = ..()
-	if(istype(user) && user?.wear_armor == src)
-		user.remove_status_effect(/datum/status_effect/buff/psydonic_endurance)
+/obj/item/clothing/suit/roguetown/armor/plate/fluted/ornate/ComponentInitialize()
+	AddComponent(/datum/component/armour_filtering/positive, TRAIT_PSYDONIAN_GRIT, "ornate_plate")
 
 // Full plate armor
 
@@ -288,15 +282,9 @@
 	/// Whether the user has the Heavy Armour Trait prior to donning.
 	var/traited = FALSE
 
-/obj/item/clothing/suit/roguetown/armor/plate/full/fluted/ornate/equipped(mob/living/user, slot)
+/obj/item/clothing/suit/roguetown/armor/plate/full/fluted/ornate/ComponentInitialize()
 	. = ..()
-	if(slot == SLOT_ARMOR)
-		user.apply_status_effect(/datum/status_effect/buff/psydonic_endurance)
-
-/obj/item/clothing/suit/roguetown/armor/plate/full/fluted/ornate/dropped(mob/living/carbon/human/user)
-	. = ..()
-	if(istype(user) && user?.wear_armor == src)
-		user.remove_status_effect(/datum/status_effect/buff/psydonic_endurance)
+	AddComponent(/datum/component/armour_filtering/positive, TRAIT_PSYDONIAN_GRIT, "ornate_plate")
 
 /obj/item/clothing/suit/roguetown/armor/plate/fluted/shadowplate
 	name = "scourge breastplate"
@@ -486,6 +474,9 @@
 	smelt_bar_num = 1
 	icon_state = "fencercuirass"
 	item_state = "fencercuirass"
+
+/obj/item/clothing/suit/roguetown/armor/plate/cuirass/fencer/ComponentInitialize()
+	AddComponent(/datum/component/armour_filtering/positive, TRAIT_FENCERDEXTERITY)
 
 /obj/item/clothing/suit/roguetown/armor/plate/half/fencer/psydon
 	name = "psydonic chestplate"
@@ -713,7 +704,7 @@
 	item_state = "citywatch"
 	blocksound = PLATEHIT
 	body_parts_covered = CHEST|GROIN|VITALS|ARMS
-	max_integrity = ARMOR_INT_CHEST_PLATE_BRIGANDINE+50//need to make it cover arms so that it displays the sprite properly. Still, giving it atypically good integrity
+	max_integrity = ARMOR_INT_CHEST_PLATE_BRIGANDINE + 50 //need to make it cover arms so that it displays the sprite properly. Still, giving it atypically good integrity
 	armor_class = ARMOR_CLASS_MEDIUM
 	smelt_bar_num = 2
 	sewrepair = FALSE

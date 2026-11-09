@@ -80,11 +80,13 @@
 	item_state = "priestunder"
 	icon = 'icons/roguetown/clothing/shirts.dmi'
 	mob_overlay_icon = 'icons/roguetown/clothing/onmob/shirts.dmi'
-	armor = ARMOR_PADDED_GOOD	//Equal to a padded gambeson, like before.
+	armor = ARMOR_PADDED	//Equal to a padded gambeson, like before.
 	armor_class = ARMOR_CLASS_LIGHT
 	max_integrity = ARMOR_INT_CHEST_LIGHT_MASTER
-	prevent_crits = list(BCLASS_CUT, BCLASS_BLUNT, BCLASS_CHOP)	 //Ensures that this inherits the padded gambeson's resistances, too.
 	slot_flags = ITEM_SLOT_ARMOR|ITEM_SLOT_SHIRT
+
+/obj/item/clothing/suit/roguetown/shirt/robe/monk/blue
+	color = CLOTHING_BLUE
 
 //This is for templars/psydonites. Gives a boon for wearing it to counter-act giving up plate and such.
 /obj/item/clothing/suit/roguetown/shirt/robe/monk/holy
@@ -144,6 +146,7 @@
 	icon_state = "nun"
 	item_state = "nun"
 	allowed_sex = list(MALE, FEMALE)
+	fiber_salvage = FALSE
 
 /obj/item/clothing/suit/roguetown/shirt/robe/wizard
 	name = "wizard's robe"
@@ -162,6 +165,17 @@
 	slot_flags = ITEM_SLOT_ARMOR
 	flags_inv = HIDEBOOB|HIDETAIL
 	resistance_flags = FIRE_PROOF
+
+/obj/item/clothing/suit/roguetown/shirt/robe/physician/plaguebearer
+	name = "reinforced plague coat"
+	desc = "Medicum morbo adhibere."
+	icon_state = "physcoat"
+	slot_flags = ITEM_SLOT_ARMOR
+	flags_inv = HIDEBOOB|HIDETAIL
+	resistance_flags = FIRE_PROOF
+	armor = ARMOR_LEATHER
+	max_integrity = ARMOR_INT_CHEST_LIGHT_MASTER
+	cold_protection = CHEST | ARM_LEFT | ARM_RIGHT
 
 //Eora content from Stonekeep
 
@@ -207,17 +221,18 @@
 	name = "hierophant's kandys"
 	desc = "A thin piece of fabric worn under a robe to stop chafing and keep ones dignity if a harsh blow of wind comes through. Despite the light fabric, it offers decent protection."
 	slot_flags = ITEM_SLOT_ARMOR|ITEM_SLOT_SHIRT
-	prevent_crits = list(BCLASS_CUT, BCLASS_BLUNT, BCLASS_CHOP)
-	armor = ARMOR_PADDED_GOOD
+	armor = ARMOR_PADDED
 	armor_class = ARMOR_CLASS_LIGHT
 	max_integrity = ARMOR_INT_CHEST_LIGHT_MASTER
 	icon_state = "desertgown"
 	item_state = "desertgown"
+	boobed_detail = FALSE
 	color = null
 	detail_color = null
 	detail_tag = "_detail"
 	naledicolor = TRUE
 	heat_protection = CHEST | GROIN
+	resistance_flags = FIRE_PROOF
 	max_heat_protection_temperature = BODYTEMP_HEAT_LEVEL_ONE_MAX
 
 /obj/item/clothing/suit/roguetown/shirt/robe/hierophant/Initialize(mapload)
@@ -237,19 +252,21 @@
 	name = "pointfex's qaba"
 	desc = "A slimmed down, tighter fitting robe made of fine silks and fabrics. Somehow you feel more mobile in it than in the nude. Despite the light fabric, it offers decent protection."
 	slot_flags = ITEM_SLOT_ARMOR|ITEM_SLOT_SHIRT
-	prevent_crits = list(BCLASS_CUT, BCLASS_BLUNT, BCLASS_CHOP)
-	armor = ARMOR_PADDED_GOOD
+	armor = ARMOR_PADDED
 	armor_class = ARMOR_CLASS_LIGHT
 	icon_state = "monkcloth"
 	item_state = "monkcloth"
+	boobed_detail = FALSE
 	color = null
-	detail_color = null
+	detail_color = CLOTHING_RED
 	detail_tag = "_detail"
 	naledicolor = TRUE
 	r_sleeve_status = SLEEVE_NOMOD
 	l_sleeve_status = SLEEVE_NOMOD
 	heat_protection = CHEST | GROIN | ARM_RIGHT | ARM_LEFT
 	max_heat_protection_temperature = BODYTEMP_HEAT_LEVEL_ONE_MAX
+	resistance_flags = FIRE_PROOF
+
 
 /obj/item/clothing/suit/roguetown/shirt/robe/pointfex/Initialize(mapload)
 	. = ..()

@@ -67,6 +67,16 @@
 	desc = "A pair of fuzzy moth wings."
 	flight_for_species = list("moth")
 
+/obj/item/organ/wings/moth/Insert(mob/living/carbon/M, special = FALSE, drop_if_replaced = TRUE)
+	. = ..()
+	if(M)
+		ADD_TRAIT(M, TRAIT_BEWINGED, TRAIT_GENERIC)
+
+/obj/item/organ/wings/moth/Remove(mob/living/carbon/M, special = FALSE, drop_if_replaced = TRUE)
+	. = ..()
+	if(M)
+		REMOVE_TRAIT(M, TRAIT_BEWINGED, TRAIT_GENERIC)
+
 /obj/item/organ/wings/dracon
 	name = "drakian wings"
 	desc = "A pair of majestic drakian wings."
@@ -169,7 +179,7 @@
 		return
 
 	user.visible_message(span_notice("[user] prepares to take flight."))
-	if(!do_after(user, 3 SECONDS))
+	if(!move_after(user, 3 SECONDS, target = user))
 		return
 
 	var/athletics_skill = max(user.get_skill_level(/datum/skill/misc/athletics), SKILL_LEVEL_NOVICE)

@@ -85,7 +85,7 @@
 /obj/item/natural/clay/Initialize(mapload)
 	if(cooked_type)
 		cooktime = 30 SECONDS
-	..() // The ..() refers to calling the parent class's (obj/item/natural) Initialize() proc.
+	return ..() // The ..() refers to calling the parent class's (obj/item/natural) Initialize() proc.
 
 /obj/item/natural/clay/refined
 	name = "refined clay"
@@ -110,7 +110,7 @@
 	if(!user)
 		return ..()
 
-	var/found_table = locate(/obj/structure/table) in (loc)
+	var/found_table = has_table_surface(loc)
 	var/obj/item/reagent_containers/water_container = W
 	if(istype(water_container) && !is_wet)
 		if(isturf(loc) && !found_table)

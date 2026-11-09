@@ -238,6 +238,9 @@
 		if(MUTE_LOOC)
 			mute_string = "LOOC"
 			feedback_string = "LOOC"
+		if(MUTE_SLOOC)
+			mute_string = "SLOOC"
+			feedback_string = "SLOOC"
 		if(MUTE_PRAY)
 			mute_string = "pray"
 			feedback_string = "Pray"
@@ -490,7 +493,7 @@ Traitors and the like can also be revived with the previous role mostly intact.
 
 /client/proc/cmd_admin_delete(atom/A as obj|mob|turf in world)
 	set category = "-GameMaster-"
-	set name = "Delete..."
+	set name = "Delete"
 
 	if(!check_rights(R_SPAWN|R_DEBUG))
 		return

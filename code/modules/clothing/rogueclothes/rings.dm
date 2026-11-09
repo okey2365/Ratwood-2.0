@@ -1,6 +1,7 @@
 
 
 /obj/item/clothing/ring
+	no_loot_taint = TRUE
 	name = "ring"
 	desc = ""
 	w_class = WEIGHT_CLASS_TINY
@@ -30,8 +31,13 @@
 	icon_state = "ring_a"
 	sellprice = 11
 
+/obj/item/clothing/ring/bronze
+	name = "bronze ring"
+	desc = "A ring of bronzen resiliance."
+	icon_state = "ring_b"
 
 /obj/item/clothing/ring/gold
+	is_gold = TRUE
 	name = "gold ring"
 	icon_state = "ring_g"
 	sellprice = 45
@@ -150,6 +156,7 @@
 
 //gold rings
 /obj/item/clothing/ring/emerald
+	is_gold = TRUE
 	name = "gold gemerald ring"
 	icon_state = "g_ring_emerald"
 	desc = "A beautiful golden ring with a polished Gemerald set into it."
@@ -157,6 +164,7 @@
 	sellprice = 195
 
 /obj/item/clothing/ring/ruby
+	is_gold = TRUE
 	name = "gold rontz ring"
 	icon_state = "g_ring_ruby"
 	desc = "A beautiful golden ring with a polished Rontz set into it."
@@ -164,6 +172,7 @@
 	sellprice = 255
 
 /obj/item/clothing/ring/topaz
+	is_gold = TRUE
 	name = "gold toper ring"
 	icon_state = "g_ring_topaz"
 	desc = "A beautiful golden ring with a polished Toper set into it."
@@ -171,6 +180,7 @@
 	sellprice = 180
 
 /obj/item/clothing/ring/quartz
+	is_gold = TRUE
 	name = "gold blortz ring"
 	icon_state = "g_ring_quartz"
 	desc = "A beautiful golden ring with a polished Blortz set into it."
@@ -178,6 +188,7 @@
 	sellprice = 245
 
 /obj/item/clothing/ring/sapphire
+	is_gold = TRUE
 	name = "gold saffira ring"
 	icon_state = "g_ring_sapphire"
 	desc = "A beautiful golden ring with a polished Saffira set into it."
@@ -185,6 +196,7 @@
 	sellprice = 200
 
 /obj/item/clothing/ring/diamond
+	is_gold = TRUE
 	name = "gold dorpel ring"
 	icon_state = "g_ring_diamond"
 	desc = "A beautiful golden ring with a polished Dorpel set into it."
@@ -192,6 +204,7 @@
 	sellprice = 270
 
 /obj/item/clothing/ring/signet
+	is_gold = TRUE
 	name = "gold signet ring"
 	icon_state = "signet"
 	desc = "A ring of opulent gold, bearing the symbol of Psydon. By dipping it in melted tallow, it can seal writs of religious importance - a matter better known to the Inquisition, rather than the Church or Crown."
@@ -271,8 +284,7 @@
 	icon_state = "ring_s"
 	max_integrity = 50
 	body_parts_covered = COVERAGE_FULL | COVERAGE_HEAD_NOSE | NECK | HANDS | FEET //field covers the whole body
-	armor = ARMOR_FATEWEAVER //even protection against most damage types
-	prevent_crits = list(BCLASS_CUT, BCLASS_CHOP, BCLASS_STAB, BCLASS_PIERCE, BCLASS_PICK, BCLASS_BLUNT)
+	armor = ARMOR_PLATE_BSTEEL //even protection against most damage types
 	blade_dulling = DULLING_BASHCHOP
 	blocksound = PLATEHIT
 	break_sound = 'sound/foley/breaksound.ogg'
@@ -333,6 +345,10 @@
 	if(world.time > (current_time + 30 SECONDS))
 		return
 
+/obj/item/clothing/ring/band/bronze
+	name = "bronze weddingband"
+	desc = "A resilient weddingband of bronze, ornately decorated with the engravings of a lover's name."
+	icon_state = "b_ring_wedding"
 
 //blacksteel rings
 /obj/item/clothing/ring/emeraldbs

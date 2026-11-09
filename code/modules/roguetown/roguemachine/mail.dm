@@ -1,3 +1,5 @@
+#define KINGSFIELD_MAILTAG "Kingsfield"
+
 /obj/structure/roguemachine/mail
 	name = "HERMES"
 	desc = "Carrier zads have fallen severely out of fashion ever since the advent of this hydropneumatic mail system. A coin slot activates the mechanism for dispensing parchment(a zenny) and quills(a ziliqua)."
@@ -41,6 +43,25 @@
 	SSroguemachine.hermailers -= src
 	return ..()
 
+/// Turns what someone typed at a HERMES into "#number" for a box, or a name that can match a real_name.
+/// Don't sanitize() names here: it encodes ' as &#39;, which never matches a real_name and reads as box #39.
+/proc/parse_hermes_address(address)
+	var/hash_pos = findtext(address, "#")
+	if(hash_pos)
+		return "#[text2num(copytext(address, hash_pos + 1))]"
+	var/recipient = reject_bad_name(address, max_length = MAX_CHARTER_LEN)
+	if(recipient && LOWER_TEXT(recipient) == LOWER_TEXT(KINGSFIELD_MAILTAG))
+		for(var/obj/structure/roguemachine/mail/X in SSroguemachine.hermailers)
+			if(X.mailtag == KINGSFIELD_MAILTAG)
+				return "#[X.ournum]"
+	return recipient
+
+/proc/find_hermes_box(address)
+	var/box2find = text2num(copytext(address, findtext(address, "#") + 1))
+	for(var/obj/structure/roguemachine/mail/X in SSroguemachine.hermailers)
+		if(X.ournum == box2find)
+			return X
+
 /obj/structure/roguemachine/mail/attack_hand(mob/user)
 	if(ishuman(user) && GLOB.carebox.try_retrieve_carebox(user, src))
 		return TRUE
@@ -63,6 +84,49 @@
 			H.remove_status_effect(/datum/status_effect/ugotmail)
 	if(!ishuman(user))
 		return
+	if (user.mind?.has_bomb) //for TRAIT_EXPLOSIVE_SUPPLY. One bomb per one day.
+		var/mob/living/carbon/human/H = user
+		H.mind?.has_bomb = FALSE
+		var/bomb_type
+		var/static/list/bomb_type_list = list(/obj/item/tntstick,
+		/obj/item/impact_grenade/explosion,
+		/obj/item/impact_grenade/smoke/poison_gas,
+		/obj/item/impact_grenade/smoke/fire_gas,
+		/obj/item/impact_grenade/smoke/healing_gas,
+		)
+		var/bonus = 0
+		if(H.STALUC > 10)
+			bonus = 10 * (H.STALUC - 10)
+		if(prob(90 - bonus))
+			bomb_type = /obj/item/bomb
+		else
+			bomb_type = pick(bomb_type_list)
+		var/obj/item/S = new bomb_type(get_turf(H))
+		H.put_in_hands(S)
+		if(HAS_TRAIT(H, TRAIT_BOMBER_EXPERT))	//additional random second bomb.
+			bomb_type_list |= /obj/item/bomb
+			bomb_type = pick(bomb_type_list)
+			var/obj/item/B = new bomb_type(get_turf(H))
+			H.put_in_hands(B)
+	if(user.mind?.has_drug_delivery) //for TRAIT_DRUG_SUPPLY. One delivery per day.
+		var/mob/living/carbon/human/H = user
+		H.mind.has_drug_delivery = FALSE
+		var/static/list/common_drug_list = list(
+			/obj/item/reagent_containers/powder/spice,
+			/obj/item/reagent_containers/powder/moondust,
+			/obj/item/reagent_containers/powder/starsugar
+		)
+		var/static/list/rare_drug_list = list(
+			/obj/item/reagent_containers/powder/moondust_purest,
+			/obj/item/reagent_containers/powder/herozium
+		)
+		var/drug_type
+		if(prob(20))
+			drug_type = pick(rare_drug_list)
+		else
+			drug_type = pick(common_drug_list)
+		var/obj/item/D = new drug_type(get_turf(H))
+		H.put_in_hands(D)
 	if(HAS_TRAIT(user, TRAIT_INQUISITION))
 		if(!coin_loaded && !inqcoins)
 			to_chat(user, span_notice("It needs a Marque."))
@@ -91,10 +155,25 @@
 	if(inqcoins)
 		to_chat(user, span_warning("The machine doesn't respond."))
 		return
-	var/send2place = input(user, "Where to? (Person or #number)", "ROGUETOWN", null)
+	var/raw_address = input(user, "Where to? (Person or #number)", "ROGUETOWN", null)
+	var/send2place = parse_hermes_address(raw_address)
 	if(!send2place)
+		if(raw_address)
+			to_chat(user, span_warning("The machine can't make sense of that address."))
 		return
-	var/sentfrom = input(user, "Who is this letter from?", "ROGUETOWN", null)
+	if(findtext(send2place, "#"))
+		if(!find_hermes_box(send2place))
+			to_chat(user, span_warning("Failed to send it. Bad number?"))
+			return
+	else
+		var/recipient_found = FALSE
+		for(var/mob/living/carbon/human/H in GLOB.human_list)
+			if(H.real_name == send2place)
+				recipient_found = TRUE
+				break
+		if(!recipient_found && (alert(user, "Could not find recipient [send2place]. Still send the letter?", "", "YES", "NO") == "NO"))
+			return
+	var/sentfrom = sanitize(input(user, "Who is this letter from?", "ROGUETOWN", null))
 	if(!sentfrom)
 		sentfrom = "Anonymous"
 	var/sender_ckey = user.ckey
@@ -127,23 +206,23 @@
 				P.mailer = sentfrom
 				P.mailedto = send2place
 				P.update_icon()
-				GLOB.fax_panel.register_player_letter(sentfrom, send2place, t)
+				GLOB.fax_panel.register_player_letter(sentfrom, send2place, t, sender_ckey, recipient_ckey)
 				P.forceMove(X.loc)
+				if(X.mailtag == KINGSFIELD_MAILTAG)
+					GLOB.fax_panel.notify_kingsfield_mail(P, user)
 				X.say("New mail!")
 				playsound(X, 'sound/misc/hiss.ogg', 100, FALSE, -1)
 				break
 		if(found)
 			visible_message(span_warning("[user] sends something."))
 			playsound(loc, 'sound/misc/disposalflush.ogg', 100, FALSE, -1)
-			SStreasury.give_money_treasury(coin_loaded, "Mail Income")
 			coin_loaded = FALSE
 			update_icon()
 			return
 		else
+			qdel(P)
 			to_chat(user, span_warning("Failed to send it. Bad number?"))
 	else
-		if(!send2place)
-			return
 		if(SSroguemachine.hermailermaster)
 			var/obj/item/roguemachine/mastermail/X = SSroguemachine.hermailermaster
 			if(!recipient_ckey)
@@ -170,7 +249,6 @@
 			return
 		visible_message(span_warning("[user] sends something."))
 		playsound(loc, 'sound/misc/disposalflush.ogg', 100, FALSE, -1)
-		SStreasury.give_money_treasury(coin_loaded, "Mail")
 		coin_loaded = FALSE
 		update_icon()
 
@@ -328,7 +406,7 @@
 							GLOB.confessors += ", [I.signee]"
 						else
 							GLOB.confessors += "[I.signee]"
-				if(no | selfreport)
+				if(no || selfreport || stopfarming)
 					if(I.paired)
 						qdel(I.paired)
 					qdel(I)
@@ -505,8 +583,13 @@
 			to_chat(user, span_warning("The machine doesn't respond."))
 			return
 		if(alert(user, "Send Mail?",,"YES","NO") == "YES")
-			var/send2place = input(user, "Where to? (Person or #number)", "ROGUETOWN", null)
-			var/sentfrom = input(user, "Who is this from? (Leave blank to send anonymously)", "ROGUETOWN", null)
+			var/raw_address = input(user, "Where to? (Person or #number)", "ROGUETOWN", null)
+			var/send2place = parse_hermes_address(raw_address)
+			if(!send2place)
+				if(raw_address)
+					to_chat(user, span_warning("The machine can't make sense of that address."))
+				return
+			var/sentfrom = sanitize(input(user, "Who is this from? (Leave blank to send anonymously)", "ROGUETOWN", null))
 			if(!sentfrom)
 				sentfrom = "Anonymous"
 			var/sender_ckey = user.ckey
@@ -538,6 +621,8 @@
 								letter_text = letter_package.note.info
 						GLOB.fax_panel.register_player_letter(sentfrom, send2place, letter_text, sender_ckey, recipient_ckey)
 						P.forceMove(X.loc)
+						if(X.mailtag == KINGSFIELD_MAILTAG)
+							GLOB.fax_panel.notify_kingsfield_mail(P, user)
 						X.say("New mail!")
 						playsound(X, 'sound/misc/hiss.ogg', 100, FALSE, -1)
 						break
@@ -548,8 +633,6 @@
 				else
 					to_chat(user, span_warning("Cannot send it. Bad number?"))
 			else
-				if(!send2place)
-					return
 				var/mob/living/carbon/human/mailrecipient = null
 				for(var/mob/living/carbon/human/H in GLOB.human_list)
 					if(H.real_name == send2place)
@@ -653,15 +736,6 @@
 	. = ..()
 	. += "<a href='?src=[REF(src)];directory=1'>Directory:</a> [mailtag]"
 
-/obj/structure/roguemachine/mail/Topic(href, href_list)
-	..()
-
-	if(!usr)
-		return
-
-	if(href_list["directory"])
-		view_directory(usr)
-
 /obj/structure/roguemachine/mail/proc/view_directory(mob/user)
 	var/dat
 	for(var/obj/structure/roguemachine/mail/X in SSroguemachine.hermailers)
@@ -735,6 +809,8 @@
 
 /obj/item/roguemachine/mastermail/Destroy()
 	set_light(0)
+	if(SSroguemachine.hermailermaster == src)
+		SSroguemachine.hermailermaster = null
 	SSroguemachine.hermailers -= src
 	var/datum/component/storage/STR = GetComponent(/datum/component/storage)
 	if(STR)
@@ -820,6 +896,9 @@
 /obj/structure/roguemachine/mail/Topic(href, href_list)
 	..()
 	if(!usr.canUseTopic(src, BE_CLOSE))
+		return
+	if(href_list["directory"])
+		view_directory(usr)
 		return
 	if(href_list["eject"])
 		if(inqcoins <= 0)

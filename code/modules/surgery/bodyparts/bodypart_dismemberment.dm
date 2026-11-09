@@ -36,7 +36,7 @@
 	if(body_zone != BODY_ZONE_HEAD)
 		var/mob/living/carbon/human/victim = owner
 		var/d_type = "slash"
-		if(victim.run_armor_check(zone_precise, d_type, damage = damage))
+		if(victim.run_armor_check(zone_precise, d_type, armor_penetration = PEN_NONE, damage = damage))
 			to_chat(victim, span_warning("My armour just saved me from losing my [C.get_bodypart(body_zone).name]!"))
 			return FALSE
 
@@ -95,8 +95,15 @@
 			C.visible_message(span_danger("<B>[C] is [pick("BRUTALLY","VIOLENTLY","BLOODILY","MESSILY")] DECAPITATED!</B>"))
 	else
 		C.visible_message(span_danger("<B>The [src.name] is [pick("torn off", "sundered", "severed", "separated", "unsewn")]!</B>"))
-	if(!HAS_TRAIT(C, TRAIT_NOPAIN))
-		C.emote("painscream")
+	//past the two stage decapitation returns, so a first stage neck sever is not logged as a limb loss;
+	//the casterless branch is player-only or NPC mobs eating a body would spam it
+	if(user)
+		log_combat(user, C, "dismembered", null, "([src.name])", severe = TRUE)
+	else if(C.client || C.mind)
+		C.log_message("has lost their [src.name] to dismemberment", LOG_ATTACK, color = LOG_COLOR_SEVERE)
+
+	if(body_zone != BODY_ZONE_HEAD) // Sorry pal, no protagonist moment if it's your head flying off. Your ride ends here, mutie.
+		INVOKE_ASYNC(C, TYPE_PROC_REF(/mob/living/carbon, delimb_pain))
 	if(!(NOBLOOD in C.dna?.species?.species_traits) && !(INVISBLOOD in C.dna?.species?.species_traits)) //OV EDIT
 		add_mob_blood(C)
 	C.add_stress(/datum/stressevent/dismembered)
@@ -216,8 +223,8 @@
 			C.visible_message(span_danger("<B>[C] is [pick("BRUTALLY","VIOLENTLY","BLOODILY","MESSILY")] DECAPITATED!</B>"))
 	else
 		C.visible_message(span_danger("<B>The [src.name] is [pick("torn off", "sundered", "severed", "separated", "unsewn")]!</B>"))
-	if(!HAS_TRAIT(C, TRAIT_NOPAIN))
-		C.emote("painscream")
+	if(body_zone != BODY_ZONE_HEAD)
+		C.delimb_pain()
 	if(!(NOBLOOD in C.dna?.species?.species_traits))
 		add_mob_blood(C)
 	C.add_stress(/datum/stressevent/dismembered)
@@ -288,6 +295,7 @@
 	if(HAS_TRAIT(C, TRAIT_NODISMEMBER))
 		return FALSE
 	add_wound(/datum/wound/slash/disembowel)
+	C.delimb_pain()
 	return TRUE
 
 //limb removal. The "special" argument is used for swapping a limb with a new one without the effects of losing a limb kicking in.
@@ -332,6 +340,7 @@
 	if(held_index)
 		was_owner.dropItemToGround(owner.get_item_for_held_index(held_index), force = TRUE)
 		was_owner.hand_bodyparts[held_index] = null
+		was_owner.update_mob_action_buttons()
 
 	if(organ_slowdown)
 		was_owner.remove_movespeed_modifier("[src.type]_slow", update = TRUE)
@@ -458,10 +467,10 @@
 	//OV edit end
 	if(C && !special)
 		if(C.legcuffed)
-			C.legcuffed.forceMove(C.drop_location()) //At this point bodypart is still in nullspace
-			C.legcuffed.dropped(C)
-			C.legcuffed = null
-			C.update_inv_legcuffed()
+			var/obj/item/W = C.legcuffed
+			C.set_legcuffed(null)
+			W.forceMove(C.drop_location()) //At this point bodypart is still in nullspace
+			W.dropped(C)
 		if(C.shoes && (C.get_num_legs(FALSE) < 1))
 			C.dropItemToGround(C.shoes, force = TRUE)
 		C.update_inv_shoes()
@@ -476,10 +485,10 @@
 	//OV edit end
 	if(C && !special)
 		if(C.legcuffed)
-			C.legcuffed.forceMove(C.drop_location())
-			C.legcuffed.dropped(C)
-			C.legcuffed = null
-			C.update_inv_legcuffed()
+			var/obj/item/W = C.legcuffed
+			C.set_legcuffed(null)
+			W.forceMove(C.drop_location())
+			W.dropped(C)
 		if(C.shoes && (C.get_num_legs(FALSE) < 1))
 			C.dropItemToGround(C.shoes, force = TRUE)
 		C.update_inv_shoes()
@@ -492,10 +501,10 @@
 		if(HAS_TRAIT_FROM(C, TRAIT_PONYGIRL_RIDEABLE, BODY_ZONE_TAUR))
 			REMOVE_TRAIT(C, TRAIT_PONYGIRL_RIDEABLE, BODY_ZONE_TAUR)
 		if(C.legcuffed)
-			C.legcuffed.forceMove(C.drop_location())
-			C.legcuffed.dropped(C)
-			C.legcuffed = null
-			C.update_inv_legcuffed()
+			var/obj/item/W = C.legcuffed
+			C.set_legcuffed(null)
+			W.forceMove(C.drop_location())
+			W.dropped(C)
 		if(C.shoes && (C.get_num_legs(FALSE) < 1))
 			C.dropItemToGround(C.shoes, force = TRUE)
 		C.update_inv_shoes()
@@ -519,6 +528,10 @@
 //		brainmob.ghostize(0)
 
 	qdel(owner.GetComponent(/datum/component/creamed)) //clean creampie overlay
+
+	// Has to happen before ..(), the brain transfer inside it moves the mind to brainmob and nulls owner.mind
+	if(!special && owner?.mind)
+		owner.mind.severed_head_ref = WEAKREF(src)
 
 	name = "[owner.real_name]'s head"
 	. = ..()
@@ -563,6 +576,7 @@
 			if(hand)
 				hand.update_hand_vis()
 		C.update_inv_gloves()
+		C.update_mob_action_buttons()
 
 	if(special) //non conventional limb attachment
 		//if we had an ongoing surgery to attach a new limb, we stop it.
@@ -636,7 +650,44 @@
 	real_name = ""
 	name = initial(name)
 
+	if(C.mind?.severed_head_ref?.resolve() == src)
+		C.mind.severed_head_ref = null
+
 	return ..()
+
+/obj/item/bodypart/proc/get_spell_dismemberment_chance(force, bclass, zone_precise = src.body_zone)
+	if(!can_dismember())
+		return 0
+	if(bclass != BCLASS_CUT && bclass != BCLASS_CHOP)
+		return 0
+	if(bclass == BCLASS_CHOP)
+		force *= 1.1
+	return dismemberment_chance_from_force(force, zone_precise)
+
+/obj/item/bodypart/proc/dismemberment_chance_from_force(nuforce, zone_precise = src.body_zone)
+	if(nuforce < 10)
+		return 0
+	var/total_dam = get_damage()
+	var/probability = nuforce * (total_dam / max_damage)
+	var/hard_dismember = HAS_TRAIT(src, TRAIT_HARDDISMEMBER)
+	var/easy_dismember = rotted || skeletonized || HAS_TRAIT(src, TRAIT_EASYDISMEMBER)
+	var/easy_decapitation = HAS_TRAIT(src, TRAIT_EASYDECAPITATION)
+	if(owner)
+		if(!hard_dismember)
+			hard_dismember = HAS_TRAIT(owner, TRAIT_HARDDISMEMBER)
+		if(!easy_dismember)
+			easy_dismember = HAS_TRAIT(owner, TRAIT_EASYDISMEMBER)
+		if(!easy_decapitation)
+			easy_decapitation = HAS_TRAIT(owner, TRAIT_EASYDECAPITATION)
+	if((total_dam <= (max_damage * CRIT_DISMEMBER_DAMAGE_THRESHOLD)) && !easy_dismember)
+		return 0
+	if(easy_decapitation && zone_precise == BODY_ZONE_PRECISE_NECK)
+		return probability * 1.5
+	if(hard_dismember)
+		return min(probability, 5)
+	else if(easy_dismember)
+		return probability * 1.5
+	return probability
 
 //Regenerates all limbs. Returns amount of limbs regenerated
 /mob/living/proc/regenerate_limbs(noheal, excluded_limbs)

@@ -6,6 +6,7 @@
 	craftsound = 'sound/foley/Building-01.ogg'
 	verbage_simple = "construct"
 	verbage = "constructs"
+	display_category = ITEM_CAT_DECORATION
 
 /datum/crafting_recipe/roguetown/structure/TurfCheck(mob/user, turf/T)
 	if(istype(T,/turf/open/transparent/openspace))
@@ -307,7 +308,6 @@
 	skillcraft = /datum/skill/craft/carpentry
 
 /obj/item/chair/rogue/crafted
-	sellprice = 6
 
 /datum/crafting_recipe/roguetown/structure/parkbenchleft
 	name = "park bench (left)"
@@ -335,7 +335,6 @@
 	skillcraft = /datum/skill/craft/carpentry
 
 /obj/item/chair/rogue/fancy/crafted
-	sellprice = 12
 
 /datum/crafting_recipe/roguetown/structure/stool
 	name = "wooden stool"
@@ -344,7 +343,6 @@
 	skillcraft = /datum/skill/craft/carpentry
 
 /obj/item/chair/stool/bar/rogue/crafted
-	sellprice = 6
 
 /datum/crafting_recipe/roguetown/structure/anvil
 	name = "anvil"
@@ -665,6 +663,22 @@
 				/obj/item/natural/stone = 2)
 	verbage_simple = "build"
 	verbage = "builds"
+
+/datum/crafting_recipe/roguetown/structure/wooden_spit
+	name = "wooden spit"
+	result = /obj/machinery/light/rogue/hearth/wooden_spit
+	reqs = list(/obj/item/grown/log/tree/stick = 2)
+	structurecraft = /obj/machinery/light/rogue/campfire
+	ignoredensity = TRUE
+	verbage_simple = "set up"
+	verbage = "sets up"
+	craftdiff = 0
+
+/datum/crafting_recipe/roguetown/structure/wooden_spit/TurfCheck(mob/user, turf/T)
+	for(var/obj/machinery/light/rogue/campfire/fire in T)
+		if(fire.can_support_spit)
+			return TRUE
+	return FALSE
 
 /datum/crafting_recipe/roguetown/structure/cookpit
 	name = "hearth"

@@ -75,6 +75,35 @@ GLOBAL_VAR_INIT(observer_default_invisibility, INVISIBILITY_OBSERVER)
 /mob/dead/observer/admin
 	hud_type = /datum/hud/adminghost
 
+/mob/dead/observer/admin/Login()
+	. = ..()
+	apply_admin_ghost_name()
+
+/// Renames this admin ghost to its admin's preferred ghost name, if they have set one.
+/mob/dead/observer/admin/proc/apply_admin_ghost_name()
+	var/preferred_name = client?.prefs?.admin_ghost_name
+	if(!client?.holder || !preferred_name)
+		return
+	name = preferred_name
+	real_name = preferred_name
+
+/mob/dead/observer/proc/apply_admin_ghost_image()
+	if(!client?.holder)
+		return
+	if(client?.prefs?.admin_ghost_icon)
+		icon = client.prefs.admin_ghost_icon
+		icon_state = ""
+	else
+		icon = initial(icon)
+		icon_state = initial(icon_state)
+	if(ghostimage_default)
+		ghostimage_default.icon = icon
+		ghostimage_default.icon_state = icon_state
+	if(ghostimage_simple)
+		ghostimage_simple.icon = icon
+		ghostimage_simple.icon_state = icon_state
+	updateghostimages()
+
 /mob/dead/observer/rogue/nodraw
 	draw_icon = FALSE
 	icon = 'icons/roguetown/mob/misc.dmi'
@@ -93,6 +122,25 @@ GLOBAL_VAR_INIT(observer_default_invisibility, INVISIBILITY_OBSERVER)
 
 /mob/dead/observer/screye/Move(n, direct)
 	return
+
+/mob/dead/observer/screye/reenter_corpse()
+	if(client)
+		return ..()
+	// The scry ended while its player was disconnected. Send the key home anyway, or they would reconnect stranded in an eye
+	// that cannot move, leaving their body keyless and hidden from the deep slumber alert and the Disconnected Players panel
+	if(!key || !can_reenter_corpse || !mind)
+		return
+	var/mob/living/body = mind.current
+	// An aghosted admin's body keeps a placeholder "@key", so it is never taken
+	if(!isliving(body) || QDELETED(body) || body.key)
+		return
+	body.key = key
+	// Cleared when the key left the body, and transfer_to only carries the key of an active mind
+	mind.active = TRUE
+	body.mark_disconnected()
+	// No client means no Logout, which would otherwise delete this
+	qdel(src)
+	return TRUE
 
 
 
@@ -379,13 +427,18 @@ Works together with spawning an observer, noted above.
 	return ghost
 
 /mob/living/carbon/human/ghostize(can_reenter_corpse = 1, force_respawn = FALSE, admin = FALSE, drawskip = FALSE)
+	if(admin) // Aghost is never subject to in-character restrictions
+		return ..()
 	if(mind)
 		if(mind.has_antag_datum(/datum/antagonist/zombie))
 			if(force_respawn)
 				mind.remove_antag_datum(/datum/antagonist/zombie)
 				return ..()
 			var/datum/antagonist/zombie/Z = mind.has_antag_datum(/datum/antagonist/zombie)
-			if(!Z.revived)
+			// revived means the rise finished, not that they came back to life. A rise blocked indoors in
+			// town or cured outright never comes, so it must not hold them in the body all round
+			var/rise_still_coming = Z.zombie_start && (world.time < Z.zombie_start + DEAD_TO_ZOMBIE_TIME)
+			if(!Z.revived && stat == DEAD && rise_still_coming)
 				if(!(world.time % 5))
 					to_chat(src, span_warning("I'm preparing to walk again."))
 				return
@@ -1593,7 +1646,7 @@ This is the proc mobs get to turn into a ghost. Forked from ghostize due to comp
 		list("type" = /datum/antagonist/ascendant, "group" = "major", "priority" = 60),
 		list("type" = /datum/antagonist/dreamwalker, "group" = "major", "priority" = 61),
 		list("type" = /datum/antagonist/unbound_death_knight, "group" = "major", "priority" = 62),
-		list("type" = /datum/antagonist/zizo_knight, "group" = "major", "priority" = 63),
+		list("type" = /datum/antagonist/ukj_dark_itinerant, "group" = "major", "priority" = 63),
 		list("type" = /datum/antagonist/prebel/head, "group" = "minor", "priority" = 70),
 		list("type" = /datum/antagonist/prebel, "group" = "minor", "priority" = 71),
 		list("type" = /datum/antagonist/aspirant, "group" = "minor", "priority" = 72),

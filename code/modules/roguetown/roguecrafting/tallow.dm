@@ -5,6 +5,7 @@
 	abstract_type = /datum/crafting_recipe/roguetown/tallow
 	subtype_reqs = FALSE
 	skillcraft = /datum/skill/craft/cooking
+	display_category = ITEM_CAT_TOOLS_SUNDRIES
 
 /datum/crafting_recipe/roguetown/tallow/hearth_tallow
 	name = "render tallow over the hearth (x4) (1 fat)"
@@ -36,6 +37,9 @@
 	craftsound = 'sound/misc/frying.ogg'
 	verbage_simple = "render"
 	verbage = "renders"
+
+/datum/crafting_recipe/roguetown/cooking
+	skillcraft = /datum/skill/craft/cooking
 
 /datum/crafting_recipe/roguetown/cooking/mobilestove_tallow
 	name = "render tallow over the mobile stove (x3) (1 fat)"

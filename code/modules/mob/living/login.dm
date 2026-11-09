@@ -30,7 +30,7 @@
 	if(ranged_ability)
 		ranged_ability.deactivate()
 	
-	set_ssd_indicator(FALSE)
+	clear_disconnected()
 
 /mob/living/proc/login_fade()
 	set waitfor = FALSE

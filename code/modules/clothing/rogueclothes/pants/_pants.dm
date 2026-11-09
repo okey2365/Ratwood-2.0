@@ -25,7 +25,7 @@
 
 /obj/item/clothing/under/roguetown/AdjustClothes(mob/user)
 #ifdef MATURESERVER
-	if(loc == user)
+	if(is_worn_or_stored_by(user))
 		if(adjustable == CAN_CADJUST)
 			adjustable = CADJUSTED
 			icon_state = "[initial(icon_state)]_t"
@@ -52,4 +52,5 @@
 		flags_inv &= ~HIDETAIL
 	else
 		flags_inv |= HIDETAIL
+	persist_inv_flags(HIDETAIL)	//AdjustClothes() calls ResetAdjust() directly, which wipes flags_inv
 	H.update_inv_pants()

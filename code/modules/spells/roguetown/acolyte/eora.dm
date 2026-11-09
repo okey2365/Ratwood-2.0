@@ -17,6 +17,7 @@
 	throw_speed = 1
 	throw_range = 3
 	dropshrink = 0.8
+	nudist_approved = TRUE
 
 /obj/item/clothing/head/peaceflower/equipped(mob/living/carbon/human/user, slot)
 	. = ..()
@@ -63,6 +64,8 @@
 /obj/effect/proc_holder/spell/invoked/bud
 	name = "Eoran Bloom"
 	desc = "Tries to grow an Eoran bud on the target tile or on the targets head, forcing their thoughts away from violence until removed."
+	overlay_icon = 'icons/mob/actions/eoramiracles.dmi'
+	action_icon = 'icons/mob/actions/eoramiracles.dmi'
 	clothes_req = FALSE
 	range = 7
 	overlay_state = "love"
@@ -101,7 +104,9 @@
 /obj/effect/proc_holder/spell/invoked/eoracurse
 	name = "Eora's Curse"
 	desc = "Makes the target both high and drunk."
-	overlay_state = "curse2"
+	overlay_icon = 'icons/mob/actions/eoramiracles.dmi'
+	action_icon = 'icons/mob/actions/eoramiracles.dmi'
+	overlay_state = "curse"
 	releasedrain = 50
 	chargetime = 30
 	range = 7
@@ -251,6 +256,8 @@
 /obj/effect/proc_holder/spell/invoked/heartweave
 	name = "Heartweave"
 	desc = "Forge a symbiotic bond between two souls."
+	overlay_icon = 'icons/mob/actions/eoramiracles.dmi'
+	action_icon = 'icons/mob/actions/eoramiracles.dmi'
 	overlay_state = "bliss"
 	range = 1
 	chargetime = 0.5 SECONDS
@@ -357,8 +364,10 @@
 
 /obj/effect/proc_holder/spell/invoked/bless_food
 	name = "Bless Food"
-	invocations = list("Eora, nourish this offering!")
 	desc = "Bless a food item. Items that take longer to eat heal slower. Skilled clergy can bless food more often. Finer food heals more. Eoran masters can make food a golden hue."
+	overlay_icon = 'icons/mob/actions/eoramiracles.dmi'
+	action_icon = 'icons/mob/actions/eoramiracles.dmi'
+	invocations = list("Eora, nourish this offering!")
 	sound = 'sound/magic/magnet.ogg'
 	req_items = list(/obj/item/clothing/neck/roguetown/psicross)
 	devotion_cost = 25
@@ -400,8 +409,10 @@
 
 /obj/effect/proc_holder/spell/invoked/pomegranate
 	name = "Amaranth Sanctuary"
-	invocations = list("Eora, provide sanctuary for your beauty!")
 	desc = "Grow a pomegranate tree that, when tended to, grows Aurils with a variety of effects. Additionally heals beautiful people and HEAVILY debuffs both STR and PER for everyone in visible range."
+	overlay_icon = 'icons/mob/actions/eoramiracles.dmi'
+	action_icon = 'icons/mob/actions/eoramiracles.dmi'
+	invocations = list("Eora, provide sanctuary for your beauty!")
 	sound = 'sound/magic/magnet.ogg'
 	req_items = list(/obj/item/clothing/neck/roguetown/psicross)
 	devotion_cost = 500
@@ -984,7 +995,7 @@
 	if(!opened && I.get_sharpness())
 		if ( \
 			!isturf(src.loc) || \
-			!(locate(/obj/structure/table) in src.loc) && \
+			!has_table_surface(src.loc) && \
 			!(locate(/obj/structure/table/optable) in src.loc) && \
 			!(locate(/obj/item/storage/bag/tray) in src.loc) \
 			)
@@ -1266,7 +1277,6 @@
 
 /proc/process_ochre_revivals(list/mob/living/carbon/human/targets_to_revive)
 	for(var/mob/living/carbon/human/target in targets_to_revive)
-		continue
 		if(target.stat != DEAD)
 			continue
 
@@ -1365,6 +1375,8 @@
 /obj/effect/proc_holder/spell/invoked/eora_blessing
 	name = "Eora's Blessing"
 	desc = "Bestow a person with Eora's calm, if only for a little while."
+	overlay_icon = 'icons/mob/actions/eoramiracles.dmi'
+	action_icon = 'icons/mob/actions/eoramiracles.dmi'
 	sound = 'sound/magic/eora_bless.ogg'
 	devotion_cost = 80
 	recharge_time = 5 MINUTES
@@ -1429,3 +1441,42 @@
 	name = "Eora's Calm"
 	desc = "A refreshing calm. All your troubles have washed away. Why can't it always be like this?"
 	icon_state = "eora_bless"
+
+/atom/movable/screen/alert/status_effect/buff/haste
+	name = "Haste"
+	desc = "I am magically hastened."
+	icon_state = "buff"
+
+#define HASTE_FILTER "haste_glow"
+
+/datum/status_effect/buff/haste
+	var/outline_colour ="#F0E68C" // Hopefully not TOO yellow
+	id = "haste"
+	alert_type = /atom/movable/screen/alert/status_effect/buff/haste
+	effectedstats = list(STATKEY_SPD = 5)
+	duration = 1.5 MINUTES
+
+/datum/status_effect/buff/haste/other
+	duration = 3 MINUTES
+
+/datum/status_effect/buff/haste/on_creation(mob/living/new_owner, new_duration = null)
+	if(new_duration)
+		duration = new_duration
+	. = ..()
+
+/datum/status_effect/buff/haste/on_apply()
+	. = ..()
+	var/filter = owner.get_filter(HASTE_FILTER)
+	if (!filter)
+		owner.add_filter(HASTE_FILTER, 2, list("type" = "outline", "color" = outline_colour, "alpha" = 25, "size" = 1))
+	to_chat(owner, span_warning("My limbs move with uncanny swiftness."))
+
+/datum/status_effect/buff/haste/on_remove()
+	. = ..()
+	owner.remove_filter(HASTE_FILTER)
+	to_chat(owner, span_warning("My body move slowly again..."))
+
+#undef HASTE_FILTER
+
+/datum/status_effect/buff/haste/nextmove_modifier()
+	return 0.85

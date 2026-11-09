@@ -5,7 +5,7 @@
 	var/smooth_icon = null
 	smooth_diag = FALSE
 	sheet_type = null
-	baseturfs = list(/turf/open/floor/rogue/dirt/road)
+	baseturfs = /turf/open/floor/rogue/dirt/road
 	wallclimb = TRUE
 	icon = 'icons/turf/roguewall.dmi'
 
@@ -40,7 +40,7 @@
 	attacked_sound = list('sound/combat/hits/onstone/wallhit.ogg', 'sound/combat/hits/onstone/wallhit2.ogg', 'sound/combat/hits/onstone/wallhit3.ogg')
 	canSmoothWith = list(/turf/closed/wall/mineral/rogue/stone, /obj/structure/falsewall/stone)
 	above_floor = /turf/open/floor/rogue/blocks
-	baseturfs = list(/turf/open/floor/rogue/blocks)
+	baseturfs = /turf/open/floor/rogue/blocks
 	neighborlay = "dirtedge"
 	climbdiff = 3
 	damage_deflection = 10
@@ -127,7 +127,7 @@
 	attacked_sound = list('sound/combat/hits/onstone/wallhit.ogg', 'sound/combat/hits/onstone/wallhit2.ogg', 'sound/combat/hits/onstone/wallhit3.ogg')
 	canSmoothWith = list(/turf/closed/wall/mineral/rogue/craftstone)
 	above_floor = /turf/open/floor/rogue/blocks
-	baseturfs = list(/turf/open/floor/rogue/blocks)
+	baseturfs = /turf/open/floor/rogue/blocks
 	neighborlay = "dirtedge"
 	climbdiff = 3
 	damage_deflection = 10
@@ -150,7 +150,7 @@
 	attacked_sound = list('sound/combat/hits/onstone/wallhit.ogg', 'sound/combat/hits/onstone/wallhit2.ogg', 'sound/combat/hits/onstone/wallhit3.ogg')
 	canSmoothWith = list(/turf/closed/wall/mineral/rogue/stonebrick, /turf/closed/wall/mineral/rogue/wooddark)
 	above_floor = /turf/open/floor/rogue/blocks
-	baseturfs = list(/turf/open/floor/rogue/blocks)
+	baseturfs = /turf/open/floor/rogue/blocks
 	neighborlay = "dirtedge"
 	climbdiff = 4
 	damage_deflection = 20 
@@ -175,7 +175,7 @@
 	canSmoothWith = list(/turf/closed/wall/mineral/rogue/wood, /obj/structure/roguewindow, /obj/structure/roguetent, /turf/closed/wall/mineral/rogue/wooddark)
 //	sheet_type = /obj/item/grown/log/tree/lumber
 	above_floor = /turf/open/floor/rogue/ruinedwood
-	baseturfs = list(/turf/open/floor/rogue/ruinedwood)
+	baseturfs = /turf/open/floor/rogue/ruinedwood
 	neighborlay = "dirtedge"
 	climbdiff = 3
 	sheet_type = /obj/item/natural/wood/plank
@@ -201,7 +201,7 @@
 
 /turf/closed/wall/mineral/rogue/tent
 	name = "tent"
-	desc = "Made from durable fabric stretched over wooden branches."
+	desc = "Made from durable fabric stretched over wooden branches. Use a stake from the side it was built on to take it down."
 	icon = 'icons/turf/roguewall.dmi'
 	icon_state = "tent"
 	smooth = SMOOTH_FALSE
@@ -212,13 +212,49 @@
 //	canSmoothWith = list(/turf/closed/wall/mineral/rogue/wood, /obj/structure/roguewindow, /turf/closed/wall/mineral/rogue/wooddark)
 //	sheet_type = /obj/item/grown/log/tree/lumber
 	above_floor = /turf/open/floor/rogue/twig
-	baseturfs = list(/turf/open/floor/rogue/twig)
+	baseturfs = /turf/open/floor/rogue/twig
 	neighborlay = "dirtedge"
 	climbdiff = 1
 	sheet_type = /obj/item/natural/cloth
 	sheet_amount = 1
 	burn_power = 20
 	spread_chance = 9
+	var/obj/item/refund_material = /obj/item/natural/cloth
+
+/turf/closed/wall/mineral/rogue/tent/OnCrafted(dirin, mob/user)
+	. = ..()
+	if(user)
+		dir = get_dir(src, get_turf(user))
+
+/turf/closed/wall/mineral/rogue/tent/ShiftClick(mob/user)
+	to_chat(user, span_warning("I need a stake to take this wall down."))
+	return TRUE
+
+/turf/closed/wall/mineral/rogue/tent/attackby(obj/item/I, mob/user, params, multiplier)
+	if(!istype(I, /obj/item/grown/log/tree/stake))
+		return ..()
+	if(get_dist(user, src) > 1 || get_dir(src, get_turf(user)) != dir)
+		to_chat(user, span_warning("I can only take this wall down from the side it was built on."))
+		return TRUE
+	if(alert(user, "Take down this tent wall?", "Dismantle", "Yes", "No") != "Yes")
+		return TRUE
+	if(get_dist(user, src) > 1 || get_dir(src, get_turf(user)) != dir)
+		return TRUE
+	user.visible_message(span_notice("[user] begins taking down [src]."))
+	if(!do_after(user, 4 SECONDS, target = src))
+		return TRUE
+	var/turf/dismantled_turf = src
+	new /obj/item/grown/log/tree/stick(get_turf(user))
+	new refund_material(get_turf(user))
+	dismantle_wall()
+	if(istype(dismantled_turf, /turf/open/floor/rogue/twig))
+		dismantled_turf.ChangeTurf(/turf/open/transparent/openspace, flags = CHANGETURF_INHERIT_AIR)
+	return TRUE
+
+/turf/closed/wall/mineral/rogue/tent/leather
+	color = "#7a4a2b"
+	sheet_type = /obj/item/natural/hide/cured
+	refund_material = /obj/item/natural/hide/cured
 
 /turf/closed/wall/mineral/rogue/wooddark
 	name = "dark wood wall"
@@ -232,7 +268,7 @@
 	attacked_sound = list('sound/combat/hits/onwood/woodimpact (1).ogg','sound/combat/hits/onwood/woodimpact (2).ogg')
 //	sheet_type = /obj/item/grown/log/tree/lumber
 	above_floor = /turf/open/floor/rogue/ruinedwood
-	baseturfs = list(/turf/open/floor/rogue/ruinedwood)
+	baseturfs = /turf/open/floor/rogue/ruinedwood
 	neighborlay = "dirtedge"
 	climbdiff = 3
 	burn_power = 20
@@ -282,7 +318,7 @@
 	break_sound = 'sound/combat/hits/onwood/destroywalldoor.ogg'
 	attacked_sound = list('sound/combat/hits/onwood/woodimpact (1).ogg','sound/combat/hits/onwood/woodimpact (2).ogg')
 	above_floor = /turf/open/floor/rogue/rooftop
-	baseturfs = list(/turf/open/floor/rogue/ruinedwood)
+	baseturfs = /turf/open/floor/rogue/ruinedwood
 	neighborlay = "dirtedge"
 	climbdiff = 3
 	burn_power = 20
@@ -342,7 +378,7 @@
 	sheet_type = /obj/item/natural/wood/plank
 	sheet_amount = 2
 	above_floor = /turf/open/floor/rogue/ruinedwood
-	baseturfs = list(/turf/open/floor/rogue/ruinedwood)
+	baseturfs = /turf/open/floor/rogue/ruinedwood
 	neighborlay = "dirtedge"
 	climbdiff = 3
 	burn_power = 20
@@ -369,7 +405,7 @@
 	break_sound = 'sound/combat/hits/onstone/stonedeath.ogg'
 	attacked_sound = list('sound/combat/hits/onstone/wallhit.ogg', 'sound/combat/hits/onstone/wallhit2.ogg', 'sound/combat/hits/onstone/wallhit3.ogg')
 	above_floor = /turf/open/floor/rogue/blocks
-	baseturfs = list(/turf/open/floor/rogue/blocks)
+	baseturfs = /turf/open/floor/rogue/blocks
 	neighborlay = "dirtedge"
 	climbdiff = 3
 
@@ -421,7 +457,7 @@
 	attacked_sound = list('sound/combat/hits/onstone/wallhit.ogg', 'sound/combat/hits/onstone/wallhit2.ogg', 'sound/combat/hits/onstone/wallhit3.ogg')
 	canSmoothWith = list(/turf/closed/wall/mineral/rogue/brick)
 	above_floor = /turf/open/floor/rogue/tile/brick
-	baseturfs = list(/turf/open/floor/rogue/tile/brick)
+	baseturfs = /turf/open/floor/rogue/tile/brick
 	neighborlay = "dirtedge"
 	climbdiff = 4			//Same as stone-brick wall
 	damage_deflection = 20
@@ -498,7 +534,7 @@
 	attacked_sound = list('sound/combat/hits/onmetal/attackpipewall (1).ogg','sound/combat/hits/onmetal/attackpipewall (2).ogg')
 	canSmoothWith = list(/turf/closed/wall/mineral/rogue/pipe)
 	above_floor = /turf/open/floor/rogue/concrete
-	baseturfs = list(/turf/open/floor/rogue/concrete)
+	baseturfs = /turf/open/floor/rogue/concrete
 	climbdiff = 4
 	damage_deflection = 20
 

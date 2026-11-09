@@ -42,6 +42,9 @@
 
 	var/last_special = 0 //Used by the resist verb, likely used to prevent players from bypassing next_move by logging in/out.
 	var/timeofdeath = 0
+	var/last_logout_time = 0
+	var/disconnected_admin_alert_timer
+	var/disconnected_admin_alert_sent = FALSE
 
 	var/infected = FALSE //Used to tell if the mob is in progress of turning into deadite
 
@@ -170,6 +173,28 @@
 
 	var/datum/component/personal_crafting/craftingthing
 
+	//-- Dodge variables
+	/// If this mob can parry at all
+	var/mob_can_parry = FALSE
+	/// Cooldown before it's possible to dodge again
+	COOLDOWN_DECLARE(last_dodge)
+	/// Amount of time added to the cooldown before the mob can dodge again
+	var/dodgetime = 0
+	var/max_dodge = MAX_DODGE_START
+	var/parrydelay = 12
+	/// Sanity boolean. Prevents you from dodging multiple times during a single loop. Not sure if this is actually needed but I aint touching it
+	var/dodge_sanity = FALSE
+
+	//-- Parry variables
+	/// If this mob can dodge at all
+	var/mob_can_dodge = FALSE
+	/// Cooldown before it's possible to parry again
+	COOLDOWN_DECLARE(last_parry)
+	/// Amount of time added to the cooldown before the mob can parry again
+	var/setparrytime = 1.2 SECONDS
+	/// Sound that plays when you parry unarmed
+	var/parry_sound = "unarmparry"
+
 	/// Cooldown when you break out of a grab before you can be grabbed again
 	COOLDOWN_DECLARE(broke_free)
 
@@ -226,3 +251,31 @@
 
 	/// Cache of client.prefs.no_redflash to reduce accesses (and client/prefs datum checking)
 	var/no_redflash = FALSE
+	// --- Fellowship (AP Quest 2 port) ---
+	var/datum/fellowship/current_fellowship
+	var/list/incoming_fellowship_invites = list() // list of /datum/weakref to /datum/fellowship; kept in sync with fellowship.pending_invites
+	var/list/summoned_minions
+	var/attack_relay_refs = 0
+	var/attack_relay_self_added = FALSE
+	var/pet_passive = FALSE
+	/// "In Combat" timer that is used to prevent stealth and a few other mechanics while active.
+	var/in_combat_until
+	var/rest_locked_until = 0
+	/// Whether we are in a swingdelay, used to check for disrupted swingdelays.
+	var/swing_state = FALSE
+
+	/// Toggle delay for Specials, or really anything else that you don't want input spam to instantly cycle through.
+	var/toggle_delay = 1 SECONDS
+	/// Toggle timer for Specials, or really anything else that you don't want input spam to instantly cycle through.
+	var/toggle_timer
+
+	/// Parry timer for projectiles post-attack. Hooks into the attack animation, so is fairly clunky.
+	var/projectile_parry_timer
+
+	/// Had to put this here because attack() is not used solely by humans. That's fucked up, manne.
+	var/dualwield_attack_count = 0
+	var/dualwield_processing = FALSE
+	var/dualwield_finisher = FALSE
+	var/dualwield_resets_in = 0
+	var/dualwield_buff_cd = 0
+	var/dualwield_twoswing = FALSE

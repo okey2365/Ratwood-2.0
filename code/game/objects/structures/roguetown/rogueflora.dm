@@ -124,6 +124,7 @@
 
 /obj/structure/flora/roguetree/evil/Destroy()
 	soundloop.stop()
+	QDEL_NULL(soundloop)
 	if(controller)
 		controller.endvines()
 		controller.tree = null
@@ -305,6 +306,7 @@
 	climb_time = 0
 	layer = TABLE_LAYER
 	plane = GAME_PLANE
+	pass_flags = LETPASSTHROW
 	blade_dulling = DULLING_CUT
 	// debris = list(/obj/item/grown/log/tree/stick = 1) // Removed for lumberjacking/handcart upgrade PR
 	static_debris = list(/obj/item/grown/log/tree/small = 1)
@@ -320,7 +322,7 @@
 	. = ..()
 	icon_state = "t[rand(1,4)]stump"
 
-/obj/structure/flora/roguetree/stump/attackby(obj/item/I, mob/living/user)
+/obj/structure/flora/roguetree/stump/attackby(obj/item/I, mob/living/user, params)
 	if(istype(I, /obj/item/rogueweapon/shovel))
 		var/skill_level = user.get_skill_level(/datum/skill/labor/lumberjacking)
 		var/dig_time = (120 - (skill_level * 15)) / 2
@@ -355,8 +357,118 @@
 		playsound(src, destroy_sound, 100, TRUE)
 		qdel(src)
 		return TRUE
-	else
-		..()
+	if(!user.cmode)
+		if(!(I.item_flags & ABSTRACT))
+			if(user.transferItemToLoc(I, drop_location(), silent = FALSE))
+				var/list/click_params = params2list(params)
+				if(!click_params || !click_params["icon-x"] || !click_params["icon-y"])
+					return TRUE
+				I.pixel_x = initial(I.pixel_x) += CLAMP(text2num(click_params["icon-x"]) - 16, -(world.icon_size/2), world.icon_size/2) + pixel_x
+				I.pixel_y = initial(I.pixel_y) += CLAMP(text2num(click_params["icon-y"]) - 16, -(world.icon_size/2), world.icon_size/2) + pixel_y
+				return TRUE
+	return ..()
+
+/obj/structure/flora/roguetree/stump/ongive(mob/user, params)
+	var/obj/item/I = user.get_active_held_item()
+	if(!I || (I.item_flags & ABSTRACT))
+		return
+	if(user.transferItemToLoc(I, drop_location(), silent = FALSE))
+		var/list/click_params = params2list(params)
+		if(!click_params || !click_params["icon-x"] || !click_params["icon-y"])
+			return TRUE
+		I.pixel_x = initial(I.pixel_x) += CLAMP(text2num(click_params["icon-x"]) - 16, -(world.icon_size/2), world.icon_size/2) + pixel_x
+		I.pixel_y = initial(I.pixel_y) += CLAMP(text2num(click_params["icon-y"]) - 16, -(world.icon_size/2), world.icon_size/2) + pixel_y
+		return TRUE
+
+
+
+/obj/structure/flora/roguetree/stump/attack_hand(mob/living/user)
+	if(Adjacent(user) && user.pulling)
+		if(isliving(user.pulling))
+			var/mob/living/pushed_mob = user.pulling
+			if(pushed_mob.buckled)
+				to_chat(user, span_warning("[pushed_mob] is on [pushed_mob.buckled]!"))
+				return
+			if(user.used_intent.type == INTENT_GRAB)
+				if(user.grab_state < GRAB_AGGRESSIVE)
+					to_chat(user, span_warning("I need a better grip to do that!"))
+					return
+				if(user.grab_state >= GRAB_NECK)
+					tableheadsmash(user, pushed_mob)
+				else
+					tablepush(user, pushed_mob)
+			if(user.used_intent.type == INTENT_HELP)
+				pushed_mob.visible_message(span_notice("[user] begins to place [pushed_mob] onto [src]..."), \
+									span_danger("[user] begins to place [pushed_mob] onto [src]..."))
+				if(do_after(user, 35, target = pushed_mob))
+					tableplace(user, pushed_mob)
+				else
+					return
+			user.stop_pulling()
+		else if(user.pulling.pass_flags & PASSTABLE)
+			user.Move_Pulled(src)
+			if(user.pulling.loc == loc)
+				user.visible_message(span_notice("[user] places [user.pulling] onto [src]."),
+					span_notice("I place [user.pulling] onto [src]."))
+				user.stop_pulling()
+	return ..()
+
+/obj/structure/flora/roguetree/stump/CanPass(atom/movable/mover, turf/target)
+	if(istype(mover) && (mover.pass_flags & PASSTABLE))
+		return TRUE
+	if(isliving(mover))
+		var/mob/living/M = mover
+		if(M.movement_type & FLYING)
+			return TRUE
+	if(mover.throwing)
+		return TRUE
+	if(has_table_surface(get_turf(mover)))
+		return TRUE
+	return !density
+
+/obj/structure/flora/roguetree/stump/CanAStarPass(ID, dir, caller)
+	. = ..()
+	if(ismovableatom(caller))
+		var/atom/movable/mover = caller
+		. ||= (mover.pass_flags & PASSTABLE)
+
+/obj/structure/flora/roguetree/stump/proc/tableplace(mob/living/user, mob/living/pushed_mob)
+	pushed_mob.forceMove(loc)
+	pushed_mob.set_resting(TRUE, TRUE)
+	pushed_mob.visible_message(span_notice("[user] places [pushed_mob] onto [src]."), \
+								span_notice("[user] places [pushed_mob] onto [src]."))
+	log_combat(user, pushed_mob, "places", null, "onto [src]")
+
+/obj/structure/flora/roguetree/stump/proc/tablepush(mob/living/user, mob/living/pushed_mob)
+	if(HAS_TRAIT(user, TRAIT_PACIFISM))
+		to_chat(user, span_danger("Throwing [pushed_mob] onto [src] might hurt them!"))
+		return
+	var/added_passtable = FALSE
+	if(!(pushed_mob.pass_flags & PASSTABLE))
+		added_passtable = TRUE
+		pushed_mob.pass_flags |= PASSTABLE
+	pushed_mob.Move(src.loc)
+	if(added_passtable)
+		pushed_mob.pass_flags &= ~PASSTABLE
+	if(pushed_mob.loc != loc)
+		return
+	pushed_mob.Knockdown(30)
+	pushed_mob.apply_damage(10, BRUTE)
+	pushed_mob.apply_damage(40, STAMINA)
+	playsound(pushed_mob, "sound/effects/tableslam.ogg", 90, TRUE)
+	pushed_mob.visible_message(span_danger("[user] slams [pushed_mob] onto \the [src]!"), \
+								span_danger("[user] slams you onto \the [src]!"))
+	log_combat(user, pushed_mob, "tabled", null, "onto [src]")
+
+/obj/structure/flora/roguetree/stump/proc/tableheadsmash(mob/living/user, mob/living/pushed_mob)
+	pushed_mob.Knockdown(30)
+	pushed_mob.apply_damage(40, BRUTE, BODY_ZONE_HEAD)
+	pushed_mob.apply_damage(60, STAMINA)
+	take_damage(50)
+	playsound(pushed_mob, "sound/effects/tableheadsmash.ogg", 90, TRUE)
+	pushed_mob.visible_message(span_danger("[user] smashes [pushed_mob]'s head against \the [src]!"),
+								span_danger("[user] smashes your head against \the [src]"))
+	log_combat(user, pushed_mob, "head slammed", null, "against [src]")
 
 /obj/structure/flora/roguetree/stump/log
 	name = "ancient log"
@@ -390,6 +502,15 @@
 	max_integrity = 2
 	blade_dulling = DULLING_CUT
 	debris = list(/obj/item/natural/fibers = 1)
+	plane = FLOOR_PLANE
+	var/list/bush_stuck = list()	// handles mobility impairment in-tile
+
+/obj/structure/flora/roguegrass/proc/release_bush_stuck(mob/living/L)	// Helps you get stuck in a feature for a bit. Usual slowdown is applied after you leave the tile, this is on the actual tile.
+	if(!L)
+		return
+
+	bush_stuck -= L
+	L.mobility_flags |= MOBILITY_MOVE
 
 /obj/structure/flora/roguegrass/spark_act()
 	fire_act()
@@ -418,6 +539,7 @@
 	icon = 'icons/obj/flora/ausflora.dmi'
 	icon_state = "reedbush_1"
 	max_integrity = 1
+	plane = GAME_PLANE_UPPER // the default for flora so it conceals things as intended
 
 /obj/structure/flora/roguegrass/reedbush/Initialize(mapload)
 	. = ..()
@@ -437,9 +559,13 @@
 	max_integrity = 10
 	layer = 4.1
 	blade_dulling = DULLING_CUT
+	plane = GAME_PLANE_UPPER // the default for flora so it conceals things as intended
 
 /obj/structure/flora/roguegrass/water/update_icon()
 	dir = pick(GLOB.cardinals)
+
+/obj/structure/flora/roguegrass/water/reeds/update_icon()
+	dir = pick(GLOB.alldirs)
 
 /datum/component/roguegrass/Initialize()
 	RegisterSignal(parent, list(COMSIG_MOVABLE_CROSSED), PROC_REF(Crossed))
@@ -452,13 +578,13 @@
 		if(L.m_intent == MOVE_INTENT_SNEAK)
 			return
 		else
-			if(!(HAS_TRAIT(L, TRAIT_AZURENATIVE) && L.m_intent != MOVE_INTENT_RUN))
+			if(!L.treads_lightly())
 				playsound(A.loc, "plantcross", 100, FALSE, -1)
-			var/oldx = A.pixel_x
-			animate(A, pixel_x = oldx+1, time = 0.5)
-			animate(pixel_x = oldx-1, time = 0.5)
-			animate(pixel_x = oldx, time = 0.5)
-			L.consider_ambush()
+				var/oldx = A.pixel_x
+				animate(A, pixel_x = oldx+1, time = 0.5)
+				animate(pixel_x = oldx-1, time = 0.5)
+				animate(pixel_x = oldx, time = 0.5)
+				L.consider_ambush()
 	return
 
 
@@ -474,18 +600,23 @@
 	climbable = FALSE
 	dir = SOUTH
 	debris = list(/obj/item/natural/fibers = 1, /obj/item/grown/log/tree/stick = 1, /obj/item/natural/thorn = 2)
+	plane = GAME_PLANE_UPPER // the default for flora so it conceals things as intended
 	var/list/looty = list()
 	var/bushtype
 
 /obj/structure/flora/roguegrass/bush/Initialize(mapload)
-	AddComponent(/datum/component/hiding_spot)
+	AddComponent(/datum/component/hiding_spot, \
+		"Someone is already hiding inside %LOCATION!", \
+		"I hide inside %LOCATION!", \
+		"I come out from inside %LOCATION!")
 	if(isnull(bushtype))
 		var/area/rogue/bush_area = get_area(src)
-		if(!bush_area.town_area)
+		if(!istype(bush_area) || !bush_area.town_area)
 			if(prob(88))
 				bushtype = pickweight(list(/obj/item/reagent_containers/food/snacks/grown/berries/rogue=5,
 						/obj/item/reagent_containers/food/snacks/grown/berries/rogue/poison=3,
-						/obj/item/reagent_containers/food/snacks/grown/rogue/pipeweed=1))
+						/obj/item/reagent_containers/food/snacks/grown/rogue/pipeweed=1,
+						/obj/item/reagent_containers/food/snacks/grown/bakersroot=1))
 		else
 			desc += "Sadly, years of harvest inside this town have left it fruitless."
 	loot_replenish()
@@ -502,18 +633,28 @@
 
 /obj/structure/flora/roguegrass/bush/Crossed(atom/movable/AM)
 	..()
-	if(isliving(AM))
-		var/mob/living/L = AM
-		if(L.m_intent == MOVE_INTENT_RUN && (L.mobility_flags & MOBILITY_STAND))
+
+	if(!isliving(AM))
+		return
+
+	var/mob/living/L = AM
+
+	if(L.mobility_flags & MOBILITY_STAND)
+		var/stuck_time = max(1, 18 - round(L.STASTR * 0.6))
+
+		bush_stuck[L] = TRUE
+		L.mobility_flags &= ~MOBILITY_MOVE
+
+		addtimer(CALLBACK(src, PROC_REF(release_bush_stuck), L), stuck_time)
+
+		if(L.m_intent == MOVE_INTENT_RUN || (L.buckled)) // running or riding brings injury since they sidestep the slowdown
 			if(!ishuman(L))
 				to_chat(L, span_warning("I'm cut on a thorn!"))
 				L.apply_damage(5, BRUTE)
-
 			else
 				var/mob/living/carbon/human/H = L
-				if(prob(20))
+				if(prob(25))
 					if(!HAS_TRAIT(src, TRAIT_PIERCEIMMUNE))
-//						H.throw_alert("embeddedobject", /atom/movable/screen/alert/embeddedobject)
 						var/obj/item/bodypart/BP = pick(H.bodyparts)
 						var/obj/item/natural/thorn/TH = new(src.loc)
 						BP.add_embedded_object(TH, silent = TRUE)
@@ -523,6 +664,25 @@
 					var/obj/item/bodypart/BP = pick(H.bodyparts)
 					to_chat(H, span_warning("A thorn [pick("slices","cuts","nicks")] my [BP.name]."))
 					BP.receive_damage(10)
+
+
+/obj/structure/flora/roguegrass/bush/CanAStarPass(ID, travel_dir, caller)
+	if(ismovableatom(caller))
+		var/atom/movable/mover = caller
+		if(mover.pass_flags & PASSGRILLE)
+			return TRUE
+	if(travel_dir == dir)
+		return FALSE // just don't even try, not even if you can climb it
+	return ..()
+
+/obj/structure/flora/roguegrass/bush/CanPass(atom/movable/mover, turf/target)
+	..()
+	if(istype(mover) && (mover.pass_flags & PASSGRILLE))
+		return 1
+	if(isliving(mover) && bush_stuck[mover])
+		if(get_turf(mover) == loc && target != loc)
+			return FALSE
+	return 1
 
 /obj/structure/flora/roguegrass/bush/attack_hand(mob/user)
 	. = ..()
@@ -553,21 +713,7 @@
 /obj/structure/flora/roguegrass/bush/update_icon()
 	icon_state = "bush[rand(2, 4)]"
 
-/obj/structure/flora/roguegrass/bush/CanAStarPass(ID, travel_dir, caller)
-	if(ismovableatom(caller))
-		var/atom/movable/mover = caller
-		if(mover.pass_flags & PASSGRILLE)
-			return TRUE
-	if(travel_dir == dir)
-		return FALSE // just don't even try, not even if you can climb it
-	return ..()
 
-/obj/structure/flora/roguegrass/bush/CanPass(atom/movable/mover, turf/target)
-	if(istype(mover) && (mover.pass_flags & PASSGRILLE))
-		return 1
-	if(get_dir(loc, target) == dir)
-		return 0
-	return 1
 
 /obj/structure/flora/roguegrass/bush/westleach
 	name = "westleach bush"
@@ -763,7 +909,72 @@
 
 /obj/structure/flora/roguegrass/thorn_bush/update_icon()
 	icon_state = "thornbush"
-//WIP
+
+/obj/structure/flora/roguegrass/thorn_bush/Crossed(atom/movable/AM)
+	..()
+	if(!isliving(AM))
+		return
+
+	var/mob/living/L = AM
+
+	// Small critters can zoom past.
+	if(L.mob_size <= MOB_SIZE_SMALL)
+		return
+
+	// Dense thorn bushes briefly tangle anything large enough to trigger them.
+	L.Immobilize(max(0, 36 - L.STASTR * 2))
+
+	// Non-carbon mobs just take basic thorn damage. Another size check since the previous doesnt catch damage for some reason.
+	if(!iscarbon(L))
+		to_chat(L, span_warning("I'm cut on a thorn!"))
+		L.apply_damage(5, BRUTE)
+		return
+
+	var/mob/living/carbon/human/H = L
+
+	// Dendor curse causes a guaranteed thorn embedding.
+	if(HAS_TRAIT(H, TRAIT_CURSE_DENDOR))
+		var/obj/item/bodypart/BP = pick(H.bodyparts)
+		var/obj/item/natural/thorn/TH = new(src.loc)
+		BP.add_embedded_object(TH, silent = TRUE)
+		BP.receive_damage(10)
+		to_chat(H, span_danger("\A [TH] impales my [BP.name]!"))
+		return
+
+	// Kneestinger immunity prevents the thorn effects unless cursed.
+	if(HAS_TRAIT(H, TRAIT_KNEESTINGER_IMMUNITY))
+		return
+	
+	// Riding movestop and extra damage since it sidesteps stun. Galloping through thorn bushes shouldnt be the play. Riding skill gives a chance to escape this fate
+	if(H.buckled)
+		var/obj/item/bodypart/BP = pick(H.bodyparts)
+		to_chat(H, span_warning("My [BP.name] snags on a thorn."))
+		BP.receive_damage(10)
+		var/riding_level = H.get_skill_level(/datum/skill/misc/riding)
+		if(HAS_TRAIT(H, TRAIT_STEPPE_RIDER))
+			riding_level += 3
+		if(prob(100 - (riding_level * 5)))
+			to_chat(H, span_danger("My mount goes mad with pain!"))
+			H.unbuckle_mob()
+			H.Paralyze(10)
+
+	// Chance to embed a thorn, reduced by LUCK.
+	if(prob(25 - H.STALUC))
+		if(HAS_TRAIT(H, TRAIT_PIERCEIMMUNE))
+			return
+
+		var/obj/item/bodypart/BP = pick(H.bodyparts)
+		var/obj/item/natural/thorn/TH = new(src.loc)
+		BP.add_embedded_object(TH, silent = TRUE)
+		BP.receive_damage(10)
+		to_chat(H, span_danger("\A [TH] impales my [BP.name]!"))
+		return
+
+	// Otherwise, just take a normal cut.
+	var/obj/item/bodypart/BP = pick(H.bodyparts)
+	to_chat(H, span_warning("A thorn [pick("slices", "cuts", "nicks")] my [BP.name]."))
+	BP.receive_damage(10)
+
 
 // fyrituis bush -- STONEKEEP PORT
 /obj/structure/flora/roguegrass/pyroclasticflowers
@@ -1013,6 +1224,7 @@
 	mush_animate = FALSE
 
 /obj/structure/flora/rogueshroom/unhappy/random
+	mush_light_power = 0 // don't try to make a light for us, we will just be deleted
 
 /obj/structure/flora/rogueshroom/unhappy/random/Initialize(mapload)
 	. = ..()
@@ -1025,10 +1237,10 @@
 	)
 	var/mushroom_type = pickweight(mushroom_types)
 	new mushroom_type(loc)
-	qdel(src)
+	return INITIALIZE_HINT_QDEL
 
-/obj/structure/flora/rogueshroom/unhappy/New(loc)
-	..()
+/obj/structure/flora/rogueshroom/unhappy/Initialize(mapload)
+	. = ..()
 	if(mush_light_power > 0)
 		set_light(mush_light_range, mush_light_range, mush_light_power, l_color = mush_light_color)
 
@@ -1056,8 +1268,8 @@
 	. = ..()
 	icon_state = "happymush[rand(1,5)]"
 
-/obj/structure/flora/rogueshroom/happy/New(loc)
-	..()
+/obj/structure/flora/rogueshroom/happy/Initialize(mapload)
+	. = ..()
 	set_light(3, 3, 3, l_color ="#5D3FD3")
 
 /obj/structure/flora/rogueshroom/unhappy/metal
@@ -1089,8 +1301,8 @@
 	desc = "A cluster of mushrooms native to the underdark."
 	icon_state = "mushroomclusterunhappy"
 
-/obj/structure/flora/mushroomcluster/New(loc)
-	..()
+/obj/structure/flora/mushroomcluster/Initialize(mapload)
+	. = ..()
 	set_light(1.5, 1.5, 1.5, l_color ="#5D3FD3")
 
 /obj/structure/flora/tinymushrooms

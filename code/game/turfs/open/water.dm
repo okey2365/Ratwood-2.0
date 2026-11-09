@@ -45,6 +45,18 @@
 	var/swimdir = FALSE
 	temperature = 210
 
+/turf/open/water/proc/lower_water_overlay()
+	if(locate(/mob/living) in src)
+		return
+	water_overlay.layer = BELOW_MOB_LAYER
+	water_overlay.plane = GAME_PLANE
+
+/turf/open/water/proc/raise_water_overlay(atom/movable/AM)
+	if(AM.loc != src)
+		return
+	water_overlay.layer = ABOVE_MOB_LAYER
+	water_overlay.plane = GAME_PLANE_HIGHEST
+
 /turf/open/water/Initialize(mapload)
 	.  = ..()
 	water_overlay = new(src)
@@ -101,10 +113,7 @@
 				water_overlay.layer = BELOW_MOB_LAYER
 				water_overlay.plane = GAME_PLANE
 			else
-				spawn(6)
-					if(!locate(/mob/living) in src)
-						water_overlay.layer = BELOW_MOB_LAYER
-						water_overlay.plane = GAME_PLANE
+				addtimer(CALLBACK(src, PROC_REF(lower_water_overlay)), 6)
 		var/drained = get_stamina_drain(living_user, get_dir(src, newloc))
 		if(drained && !living_user.stamina_add(drained))
 			living_user.Immobilize(30)
@@ -237,10 +246,7 @@
 				water_overlay.layer = ABOVE_MOB_LAYER
 				water_overlay.plane = GAME_PLANE_HIGHEST
 			else
-				spawn(6)
-					if(AM.loc == src)
-						water_overlay.layer = ABOVE_MOB_LAYER
-						water_overlay.plane = GAME_PLANE_HIGHEST
+				addtimer(CALLBACK(src, PROC_REF(raise_water_overlay), AM), 6)
 
 			if(temperature <= 250 && living_movable.bodytemperature > BODYTEMP_COLD_LEVEL_ONE_MAX + 10)	//swimming in cold water will cool you down and chill you.
 				if(HAS_TRAIT(living_movable, TRAIT_WATERLOVING))
@@ -310,7 +316,7 @@
 				if(istype(src,/turf/open/water/sewer) || istype(src,/turf/open/water/swamp) || istype(src, /turf/open/water/sewer))
 					if (istype(src, /turf/open/water/sewer))
 						user.add_stress(/datum/stressevent/sewertouched)
-					if (!HAS_TRAIT(L,TRAIT_LEECHIMMUNE)) // cleaning yourself in nasty water is a wonderful way to get leeches.
+					if (!HAS_TRAIT(L,TRAIT_LEECHIMMUNE) && !HAS_TRAIT(L,TRAIT_BOGWALKER)) // cleaning yourself in nasty water is a wonderful way to get leeches.
 						if (prob(20)) // 1 in 5 chance of getting leeched if you wash up in gross water.
 							var/list/zones = list(BODY_ZONE_CHEST, BODY_ZONE_R_ARM, BODY_ZONE_L_ARM, BODY_ZONE_PRECISE_NECK, BODY_ZONE_HEAD)
 							var/zone = pick(zones)
@@ -502,7 +508,7 @@
 
 /turf/open/water/swamp/Entered(atom/movable/AM, atom/oldLoc)
 	. = ..()
-	if(HAS_TRAIT(AM, TRAIT_LEECHIMMUNE))
+	if(HAS_TRAIT(AM, TRAIT_LEECHIMMUNE) || HAS_TRAIT(AM, TRAIT_BOGWALKER))
 		return
 	if(isliving(AM) && !AM.throwing)
 		if(ishuman(AM))
@@ -542,7 +548,7 @@
 
 /turf/open/water/swamp/deep/Entered(atom/movable/AM, atom/oldLoc)
 	. = ..()
-	if(HAS_TRAIT(AM, TRAIT_LEECHIMMUNE))
+	if(HAS_TRAIT(AM, TRAIT_LEECHIMMUNE) || HAS_TRAIT(AM, TRAIT_BOGWALKER))
 		return
 	if(isliving(AM) && !AM.throwing)
 		if(ishuman(AM))

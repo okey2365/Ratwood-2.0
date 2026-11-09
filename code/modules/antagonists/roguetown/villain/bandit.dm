@@ -3,8 +3,8 @@
 	roundend_category = "bandits"
 	antagpanel_category = "Bandit"
 	job_rank = ROLE_BANDIT
-	antag_hud_type = ANTAG_HUD_TRAITOR
-	antag_hud_name = "bandit"
+	antag_hud_type = ANTAG_HUD_BANDIT
+	antag_hud_name = "bandit_hud"
 	confess_lines = list(
 		"FREEDOM!!!",
 		"I WILL NOT LIVE IN YOUR WALLS!",
@@ -25,6 +25,11 @@
 	. = ..()
 	equip_bandit()
 	finalize_bandit()
+	add_antag_hud(antag_hud_type, antag_hud_name, owner.current)
+
+/datum/antagonist/bandit/on_removal()
+	remove_own_antag_hud()
+	return ..()
 
 /datum/antagonist/bandit/proc/finalize_bandit()
 	owner.current.playsound_local(get_turf(owner.current), 'sound/music/traitor2.ogg', 60, FALSE, pressure_affected = FALSE)
@@ -35,7 +40,7 @@
 	ADD_TRAIT(H, TRAIT_BANDITCAMP, TRAIT_GENERIC)
 	ADD_TRAIT(H, TRAIT_SEEPRICES, TRAIT_GENERIC)
 	ADD_TRAIT(H, TRAIT_COMMIE, TRAIT_GENERIC)
-	ADD_TRAIT(H, TRAIT_OUTLAW, TRAIT_GENERIC)//No meisters.
+	ADD_TRAIT(H, TRAIT_OUTLAW, TRAIT_GENERIC)
 	to_chat(H, span_alertsyndie("I am a BANDIT!"))
 /*
 	to_chat(H, span_boldwarning("Long ago I did a crime worthy of my bounty being hung on the wall outside of the local inn. \

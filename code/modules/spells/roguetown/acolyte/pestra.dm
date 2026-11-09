@@ -249,7 +249,6 @@
 		var/obj/effect/R = new /obj/effect/spell_rune
 		R.icon = action_icon
 		R.icon_state = "infestation10"
-		action.overlay_alpha = overlay_alpha
 		mob_charge_effect = R
 	if(user && !charge_component)
 		// Sanity check
@@ -263,7 +262,7 @@
 /obj/effect/proc_holder/spell/invoked/infestation/proc/update_charge_overlay(charge_count)
 	overlay_state = "infestation[charge_count]"
 	update_icon()
-	action.UpdateButtonIcon(FALSE, TRUE)
+	action.build_all_button_icons(ALL, TRUE)
 	action.desc = "[desc]\n<span class='notice'>Charges = [charge_count]</span>"
 
 /obj/effect/proc_holder/spell/invoked/infestation/cast(list/targets, mob/living/user)
@@ -424,7 +423,7 @@
 		for(var/obj/structure/fluff/psycross/S in oview(5, user))
 			S.AOE_flash(user, range = 8)
 
-		var/datum/antagonist/zombie/was_zombie = target.mind?.has_antag_datum(/datum/antagonist/zombie)
+		var/datum/antagonist/zombie/was_zombie = get_deadite_antag_for_body(target)
 		var/fully_turned = was_zombie?.has_turned //Don't stink up someone who hasn't yet turned
 		if(target.stat == DEAD || fully_turned)	//Checks if the target is a dead rotted corpse.
 			var/datum/component/rot/rot = target.GetComponent(/datum/component/rot)
@@ -574,7 +573,7 @@
 		overlay_state = "heal_disabled"
 	update_icon()
 	if(action)
-		action.UpdateButtonIcon(FALSE, TRUE)
+		action.build_all_button_icons(ALL, TRUE)
 
 /obj/effect/proc_holder/spell/invoked/divine_rebirth
 	name = "Divine Rebirth"

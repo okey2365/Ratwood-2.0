@@ -21,6 +21,9 @@
 	crossfire = TRUE
 	fueluse = 0
 	no_refuel = TRUE
+	max_integrity = 200
+	can_damage = TRUE
+	flags_1 = NONE
 	heat_level = 4
 
 /obj/machinery/light/rogue/firebowl/CanPass(atom/movable/mover, turf/target)
@@ -28,7 +31,7 @@
 		return 1
 	if(mover.throwing)
 		return 1
-	if(locate(/obj/structure/table) in get_turf(mover))
+	if(has_table_surface(get_turf(mover)))
 		return 1
 	return !density
 
@@ -46,6 +49,17 @@
 				icon_state = "[base_state]0"
 			return
 
+/obj/machinery/light/rogue/firebowl/attack_right(mob/user)	// warm your hands a little at a more accessible spot than fireplaces
+	if(isliving(user))
+		var/mob/living/L = user
+		if(on)
+			L.visible_message(span_info("[user] starts to warm their hands."), span_info("You warm your hands."))
+			if(do_after(L, 4 SECONDS, target = src))
+				if(L.bodytemperature < BODYTEMP_NORMAL_MIN)
+					L.adjust_bodytemperature(10)
+		return
+
+
 /obj/machinery/light/rogue/firebowl/off
 	icon_state = "stonefire0"
 	base_state = "stonefire"
@@ -56,11 +70,13 @@
 	icon_state = "stumpfire1"
 	base_state = "stumpfire"
 	desc = "Somewhat crude, but it lights the long winding paths throughout the land."
+	max_integrity = 100
 
 /obj/machinery/light/rogue/firebowl/church
 	desc = "A wide metal bowl mounted on a stand for a healthy roaring flame."
 	icon_state = "churchfire1"
 	base_state = "churchfire"
+	max_integrity = 100
 
 /obj/machinery/light/rogue/firebowl/church/off
 	icon_state = "churchfire0"
@@ -78,6 +94,7 @@
 	cookonme = FALSE
 	crossfire = FALSE
 	density = FALSE
+	max_integrity = 100
 	heat_level = 3
 
 
@@ -138,6 +155,7 @@
 /obj/machinery/light/rogue/campfire/fireplace
 	name = "fireplace"
 	desc = "A warm fire dances between a pile of half-burnt logs upon a bed of glowing embers."
+	can_support_spit = FALSE
 	icon_state = "wallfire1"
 	base_state = "wallfire"
 	light_outer_range = 4 //slightly weaker than a torch
@@ -370,6 +388,11 @@
 	torchy.weather_resistant = TRUE
 	. = ..()
 
+/obj/machinery/light/rogue/torchholder/Destroy()
+	if(torchy)
+		QDEL_NULL(torchy)
+	return ..()
+
 /obj/machinery/light/rogue/torchholder/OnCrafted(dirin, user)
 	dirin = turn(dirin, 180)
 	QDEL_NULL(torchy)
@@ -517,7 +540,7 @@
 		return 1
 	if(mover.throwing)
 		return 1
-	if(locate(/obj/structure/table) in get_turf(mover))
+	if(has_table_surface(get_turf(mover)))
 		return 1
 	else
 		return !density
@@ -750,6 +773,44 @@
 	QDEL_NULL(boilloop)
 	. = ..()
 
+/obj/machinery/light/rogue/hearth/wooden_spit
+	name = "wooden spit"
+	desc = "A wooden spit set over a campfire. It can hold the same cookware as a hearth."
+	icon = 'icons/roguetown/misc/campfire_spit.dmi'
+	icon_state = "spit_1"
+	density = FALSE
+	fueluse = 15 MINUTES
+	max_integrity = 30
+
+/obj/machinery/light/rogue/hearth/wooden_spit/Initialize(mapload)
+	. = ..()
+	icon_state = "spit_[rand(1,4)]"
+
+/obj/machinery/light/rogue/hearth/wooden_spit/update_icon()
+	cut_overlays()
+	if(attachment)
+		var/obj/item/I = attachment
+		I.pixel_x = 0
+		I.pixel_y = 0
+		add_overlay(new /mutable_appearance(I))
+		if(food)
+			I = food
+			I.pixel_x = 0
+			I.pixel_y = 0
+			add_overlay(new /mutable_appearance(I))
+
+/obj/machinery/light/rogue/hearth/wooden_spit/OnCrafted(dirin, mob/user)
+	var/obj/machinery/light/rogue/campfire/fire = locate(/obj/machinery/light/rogue/campfire) in loc
+	var/greater_fire = fire?.spit_builds_dense
+	var/remaining_fuel = fire?.fueluse
+	. = ..()
+	if(greater_fire)
+		density = TRUE
+		max_integrity = 60
+	if(!isnull(remaining_fuel))
+		fueluse = remaining_fuel
+	update_icon()
+
 /obj/machinery/light/rogue/hearth/mobilestove // thanks to Reen and Ppooch for their help on this. If any of this is slopcode, its my slopcode, not theirs. They only made improvements.
 	name = "mobile stove"
 	desc = "A portable bronze stovetop. The underside is covered in an esoteric pattern of small tubes. Whatever heats the hob is hidden inside the body of the device"
@@ -862,6 +923,10 @@
 	max_integrity = 30
 	soundloop = /datum/looping_sound/fireloop
 	heat_level = 5
+	/// Whether a wooden spit can be constructed over this fire.
+	var/can_support_spit = TRUE
+	/// Whether a wooden spit constructed over this fire receives the greater-fire durability and density.
+	var/spit_builds_dense = FALSE
 	var/healing_range = 1
 	var/static/list/acceptable_beds = list(/obj/structure/bed, /obj/structure/flora/roguetree/stump, /obj/item/bedsheet)
 	var/datum/status_effect/buff/stamina_status_effect = /datum/status_effect/buff/campfire_stamina
@@ -929,6 +994,8 @@
 		return TRUE //fires that are on always have this interaction with lmb unless its a torch
 
 /obj/machinery/light/rogue/campfire/densefire
+	can_support_spit = TRUE
+	spit_builds_dense = TRUE
 	icon_state = "densefire1"
 	base_state = "densefire"
 	desc = "A ring of stones offers the fire enough protection from the wind to keep the dark at bay and the body warm."
@@ -948,7 +1015,7 @@
 		return 1
 	if(mover.throwing)
 		return 1
-	if(locate(/obj/structure/table) in get_turf(mover))
+	if(has_table_surface(get_turf(mover)))
 		return 1
 	if(locate(/obj/machinery/light/rogue/firebowl) in get_turf(mover))
 		return 1
@@ -957,6 +1024,7 @@
 
 /obj/machinery/light/rogue/campfire/pyre
 	name = "pyre"
+	can_support_spit = FALSE
 	icon = 'icons/roguetown/misc/tallstructure.dmi'
 	icon_state = "pyre1"
 	base_state = "pyre"
@@ -969,6 +1037,7 @@
 	dir = NORTH
 	buckle_requires_restraints = 1
 	buckle_prevents_pull = 1
+	buckle_blocks_spells = TRUE
 	heat_level = 5
 
 
@@ -982,6 +1051,7 @@
 	M.reset_offsets("bed_buckle")
 
 /obj/machinery/light/rogue/campfire/longlived
+	can_support_spit = FALSE
 	fueluse = 180 MINUTES
 
 #undef MIN_STEW_TEMPERATURE

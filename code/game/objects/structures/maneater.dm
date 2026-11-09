@@ -18,6 +18,7 @@
 	var/last_eat
 	buckle_lying = FALSE
 	buckle_prevents_pull = TRUE
+	buckle_blocks_spells = TRUE
 	var/seednutrition = 0
 	var/max_seednutrition = 100
 	var/mob/planter = null
@@ -52,10 +53,14 @@
 			eaten.forceMove(target)
 			contents.Remove(eaten)
 	STOP_PROCESSING(SSobj, src)
-	..()
+	return ..()
 
 /obj/structure/flora/roguegrass/maneater/real/Crossed(atom/movable/AM)
 	..()
+	if(HAS_TRAIT(AM, TRAIT_LOCAL_KNOWLEDGE) && isliving(AM))
+		var/mob/living/native = AM
+		if(native.m_intent != MOVE_INTENT_RUN)
+			return
 	if(obj_broken)
 		return
 	if(world.time <= last_eat + 8 SECONDS)
@@ -197,7 +202,7 @@
 
 
 /obj/structure/flora/roguegrass/maneater/real/juvenile/Initialize(mapload)
-	..()
+	. = ..()
 	transform = transform.Scale(0.75, 0.75)  // Start larger than an kobold.
 	addtimer(CALLBACK(src, PROC_REF(try_grow)), growth_time)
 

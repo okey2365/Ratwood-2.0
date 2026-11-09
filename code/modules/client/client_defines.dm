@@ -27,6 +27,13 @@
 	///Internal counter for clients sending irc relay messages via ahelp to prevent spamming. Set to a number every time an admin reply is sent, decremented for every client send.
 	var/ircreplyamount = 0
 
+	///Built POV timelines, keyed by pov_cache_key(). Oldest first, oldest dropped when full
+	var/list/pov_log_cache
+	///Highlighted actor classes per timeline, same keying as the cache
+	var/list/pov_log_highlights
+	///Filter state per timeline, three characters: attacks, highlighted, faded
+	var/list/pov_log_filters
+
 		/////////
 		//OTHER//
 		/////////
@@ -80,6 +87,7 @@
 	var/account_age = -1
 
 	preload_rsc = PRELOAD_RSC
+	var/cached_sounds = FALSE
 
 	var/atom/movable/screen/click_catcher/void
 
@@ -176,6 +184,8 @@
 	var/next_move_dir_add
 	/// On next move, subtract this dir from the move that would otherwise be done
 	var/next_move_dir_sub
+	/// world.time of last intercepted mouse-up, used to prevent double-clicks after signal intercept
+	var/click_intercept_time = 0
 
 /client/proc/update_weather(force)
 	if(!mob)

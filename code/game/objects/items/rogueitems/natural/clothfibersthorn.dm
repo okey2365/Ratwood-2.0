@@ -357,9 +357,8 @@
 			prob2break = 0
 		if(L.m_intent == MOVE_INTENT_RUN)
 			prob2break = 100
-		if(prob(prob2break))
-			if(!(HAS_TRAIT(L, TRAIT_AZURENATIVE) || (HAS_TRAIT(L, TRAIT_WOODWALKER)) && L.m_intent != MOVE_INTENT_RUN))
-				playsound(src,'sound/items/seedextract.ogg', 100, FALSE)
+		if(prob(prob2break) && !L.treads_lightly())
+			playsound(src,'sound/items/seedextract.ogg', 100, FALSE)
 			qdel(src)
 			if (L.alpha == 0 && L.rogue_sneaking) // not anymore you're not
 				L.update_sneak_invis(TRUE)
@@ -526,7 +525,7 @@
 /obj/item/natural/bundle/bone/rdm
 
 /obj/item/natural/bundle/bone/rdm/Initialize(mapload)
-	..()
+	. = ..()
 	amount = rand(2,6)
 /*/obj/item/natural/bone/attackby(obj/item/I, mob/living/user, params)
 	var/mob/living/carbon/human/H = user

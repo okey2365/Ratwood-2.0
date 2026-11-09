@@ -1,8 +1,8 @@
 /obj/item/rogueweapon/sword/long/martyr
 	force = 30
 	force_wielded = 36
-	possible_item_intents = list(/datum/intent/sword/cut, /datum/intent/sword/thrust, /datum/intent/sword/strike,  /datum/intent/sword/peel)
-	gripped_intents = list(/datum/intent/sword/cut, /datum/intent/sword/thrust,  /datum/intent/sword/peel, /datum/intent/sword/chop)
+	possible_item_intents = list(/datum/intent/sword/cut, /datum/intent/sword/thrust, /datum/intent/sword/strike)
+	gripped_intents = list(/datum/intent/sword/cut/long, /datum/intent/sword/thrust/long, /datum/intent/sword/chop)
 	icon_state = "martyrsword"
 	icon = 'icons/roguetown/weapons/swords64.dmi'
 	item_state = "martyrsword"
@@ -44,24 +44,23 @@
 	)
 
 /datum/intent/sword/cut/martyr
-		item_d_type = "fire"
-		blade_class = BCLASS_CUT
+	item_d_type = "fire"
+	blade_class = BCLASS_CUT
 /datum/intent/sword/thrust/martyr
-		item_d_type = "fire"
-		blade_class = BCLASS_PICK // so our armor-piercing attacks in ult mode can do crits(against most armors, not having crit)
+	item_d_type = "fire"
+	blade_class = BCLASS_PICK // so our armor-piercing attacks in ult mode can do crits(against most armors, not having crit)
 /datum/intent/sword/strike/martyr
-		item_d_type = "fire"
-		blade_class = BCLASS_SMASH
+	item_d_type = "fire"
+	blade_class = BCLASS_SMASH
 /datum/intent/sword/chop/martyr
-		item_d_type = "fire"
-		blade_class = BCLASS_CHOP
+	item_d_type = "fire"
+	blade_class = BCLASS_CHOP
 
 /obj/item/rogueweapon/sword/long/martyr/Initialize(mapload)
 	. = ..(mapload)
 	if(SSroguemachine.martyrweapon)
-		qdel(src)
-	else
-		SSroguemachine.martyrweapon = src
+		return INITIALIZE_HINT_QDEL
+	SSroguemachine.martyrweapon = src
 	if(!gc_destroyed)
 		var/list/active_intents = list(/datum/intent/sword/cut/martyr, /datum/intent/sword/thrust/martyr, /datum/intent/sword/strike/martyr)
 		var/list/active_intents_wielded = list(/datum/intent/sword/cut/martyr, /datum/intent/sword/thrust/martyr, /datum/intent/sword/strike/martyr, /datum/intent/sword/chop/martyr)
@@ -71,7 +70,6 @@
 
 /obj/item/rogueweapon/sword/long/martyr/proc/anti_stall()
 	src.visible_message(span_danger("The Martyr's sword dissolved into sparkling dust, which instantly rose up and was carried away by the wind."))
-	SSroguemachine.martyrweapon = null
 	qdel(src)
 
 /obj/item/rogueweapon/sword/long/martyr/attack_hand(mob/user)
@@ -103,6 +101,7 @@
 		return FALSE
 
 /obj/item/rogueweapon/sword/long/martyr/Destroy()
+	SSroguemachine.martyrweapon = null
 	var/datum/component/martyr = GetComponent(/datum/component/martyrweapon)
 	if(martyr)
 		martyr.ClearFromParent()
@@ -121,7 +120,7 @@
 	force = 20
 	force_wielded = 35
 	possible_item_intents = list(/datum/intent/axe/cut, /datum/intent/axe/chop, /datum/intent/axe/bash)
-	gripped_intents = list(/datum/intent/axe/cut/battle/greataxe, /datum/intent/axe/chop/battle/greataxe, /datum/intent/axe/bash)
+	gripped_intents = list(/datum/intent/axe/cut/long, /datum/intent/axe/chop/long, /datum/intent/axe/bash)
 	icon_state = "martyraxe"
 	icon = 'icons/roguetown/weapons/axes64.dmi'
 	item_state = "martyraxe"
@@ -149,7 +148,7 @@
 		added_def = 0,\
 	)
 
-/datum/intent/axe/cut/battle/greataxe/martyr
+/datum/intent/axe/cut/long/martyr
 		item_d_type = "fire"
 		blade_class = BCLASS_CUT
 
@@ -157,7 +156,7 @@
 		item_d_type = "fire"
 		blade_class = BCLASS_CUT
 
-/datum/intent/axe/chop/battle/greataxe/martyr
+/datum/intent/axe/chop/long/martyr
 		item_d_type = "fire"
 		blade_class = BCLASS_CHOP
 		swingdelay = 5
@@ -179,14 +178,13 @@
 		SSroguemachine.martyrweapon = src
 	if(!gc_destroyed)
 		var/list/active_intents = list(/datum/intent/axe/cut/martyr, /datum/intent/axe/chop/martyr, /datum/intent/axe/bash/martyr)
-		var/list/active_intents_wielded = list(/datum/intent/axe/cut/battle/greataxe/martyr, /datum/intent/axe/chop/battle/greataxe/martyr, /datum/intent/axe/bash/martyr)
+		var/list/active_intents_wielded = list(/datum/intent/axe/cut/long/martyr, /datum/intent/axe/chop/long/martyr, /datum/intent/axe/bash/martyr)
 		var/safe_damage = 15
 		var/safe_damage_wielded = 35
 		AddComponent(/datum/component/martyrweapon, active_intents, active_intents_wielded, safe_damage, safe_damage_wielded)
 
 /obj/item/rogueweapon/greataxe/steel/doublehead/martyr/proc/anti_stall()
 	src.visible_message(span_danger("The Martyr's axe dissolved into sparkling dust, which instantly rose up and was carried away by the wind."))
-	SSroguemachine.martyrweapon = null
 	qdel(src)
 
 /obj/item/rogueweapon/greataxe/steel/doublehead/martyr/attack_hand(mob/user)
@@ -218,6 +216,7 @@
 		return FALSE
 
 /obj/item/rogueweapon/greataxe/steel/doublehead/martyr/Destroy()
+	SSroguemachine.martyrweapon = null
 	var/datum/component/martyr = GetComponent(/datum/component/martyrweapon)
 	if(martyr)
 		martyr.ClearFromParent()
@@ -288,7 +287,6 @@
 
 /obj/item/rogueweapon/mace/goden/martyr/proc/anti_stall()
 	src.visible_message(span_danger("The Martyr's mace dissolved into sparkling dust, which instantly rose up and was carried away by the wind."))
-	SSroguemachine.martyrweapon = null
 	qdel(src)
 
 /obj/item/rogueweapon/mace/goden/martyr/attack_hand(mob/user)
@@ -320,6 +318,7 @@
 		return FALSE
 
 /obj/item/rogueweapon/mace/goden/martyr/Destroy()
+	SSroguemachine.martyrweapon = null
 	var/datum/component/martyr = GetComponent(/datum/component/martyrweapon)
 	if(martyr)
 		martyr.ClearFromParent()
@@ -330,7 +329,7 @@
 	force_wielded = 35
 	max_blade_int = 250
 	possible_item_intents = list(SPEAR_THRUST_1H, /datum/intent/spear/bash)
-	gripped_intents = list(/datum/intent/spear/thrust, /datum/intent/rend/reach/partizan, /datum/intent/partizan/peel, /datum/intent/spear/bash)
+	gripped_intents = list(/datum/intent/spear/thrust, /datum/intent/spear/cut, /datum/intent/rend/reach/partizan, /datum/intent/spear/bash)
 	icon_state = "martyrtrident"
 	icon = 'icons/roguetown/weapons/polearms64.dmi'
 	item_state = "martyrtrident"
@@ -372,7 +371,7 @@
 /datum/intent/rend/reach/partizan/martyr
 		item_d_type = "fire"
 
-/datum/intent/partizan/peel/martyr
+/datum/intent/spear/cut/martyr
 		item_d_type = "fire"
 
 
@@ -384,14 +383,13 @@
 		SSroguemachine.martyrweapon = src
 	if(!gc_destroyed)
 		var/list/active_intents = list(/datum/intent/spear/thrust/oneh/martyr, /datum/intent/spear/bash/martyr)
-		var/list/active_intents_wielded = list(/datum/intent/spear/thrust/martyr, /datum/intent/rend/reach/partizan/martyr, /datum/intent/partizan/peel/martyr, /datum/intent/spear/bash/martyr)
+		var/list/active_intents_wielded = list(/datum/intent/spear/thrust/martyr, /datum/intent/spear/cut/martyr, /datum/intent/rend/reach/partizan/martyr, /datum/intent/spear/bash/martyr)
 		var/safe_damage = 20
 		var/safe_damage_wielded = 25
 		AddComponent(/datum/component/martyrweapon, active_intents, active_intents_wielded, safe_damage, safe_damage_wielded)
 
 /obj/item/rogueweapon/spear/partizan/martyr/proc/anti_stall()
 	src.visible_message(span_danger("The Martyr's spear dissolved into sparkling dust, which instantly rose up and was carried away by the wind."))
-	SSroguemachine.martyrweapon = null
 	qdel(src)
 
 /obj/item/rogueweapon/spear/partizan/martyr/attack_hand(mob/user)
@@ -423,6 +421,7 @@
 		return FALSE
 
 /obj/item/rogueweapon/spear/partizan/martyr/Destroy()
+	SSroguemachine.martyrweapon = null
 	var/datum/component/martyr = GetComponent(/datum/component/martyrweapon)
 	if(martyr)
 		martyr.ClearFromParent()
@@ -714,7 +713,6 @@
 	boobed = TRUE
 	slot_flags = ITEM_SLOT_ARMOR|ITEM_SLOT_CLOAK
 	flags_inv = HIDECROTCH|HIDEBOOB
-	var/overarmor = TRUE
 	sellprice = 300
 
 /obj/item/clothing/cloak/holysee/ComponentInitialize()
@@ -729,12 +727,3 @@
 		for(var/obj/item/I in things)
 			STR.remove_from_storage(I, get_turf(src))
 
-/obj/item/clothing/cloak/holysee/MiddleClick(mob/user)
-	overarmor = !overarmor
-	to_chat(user, span_info("I [overarmor ? "wear the tabard over my armor" : "wear the tabard under my armor"]."))
-	if(overarmor)
-		alternate_worn_layer = TABARD_LAYER
-	else
-		alternate_worn_layer = UNDER_ARMOR_LAYER
-	user.update_inv_cloak()
-	user.update_inv_armor()

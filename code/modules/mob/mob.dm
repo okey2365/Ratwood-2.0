@@ -44,9 +44,15 @@ GLOBAL_VAR_INIT(mobids, 1)
 	for(var/cc in client_colours)
 		qdel(cc)
 	if(used_intent)
-		qdel(used_intent)
-	if(a_intent && a_intent.mastermob == src)
-		a_intent.mastermob = null
+		QDEL_NULL(used_intent)
+	if(mmb_intent)
+		QDEL_NULL(mmb_intent)
+	if(rmb_intent)
+		QDEL_NULL(rmb_intent)
+	if(unarmed_special)
+		QDEL_NULL(unarmed_special)
+	a_intent = null // this SHOULD be in possible_a_intents, so don't qdel it
+	o_intent = null // ditto but for possible_offhand_intents
 	QDEL_LIST(possible_a_intents)
 	QDEL_LIST(possible_offhand_intents)
 	SStreasury.remove_person(src) // Call me overly cautious I dunno when they giving dogs bank account
@@ -56,6 +62,17 @@ GLOBAL_VAR_INIT(mobids, 1)
 		QDEL_NULL(skills)
 	client_colours = null
 	ghostize(drawskip=TRUE)
+	// spell/action removal must go after ghostize, so we only delete the ones not transferred by a mind
+	// remove innate spells before we remove any potentially-associated actions
+	RemoveAllSpells()
+	// avoid deleting client-managed actions, just remove them to avoid hung references
+	// if the mob is destroyed due to player logout client will be null
+	var/datum/player_details/details = client ? client.player_details : (GLOB.player_details[ckey || ckey(mind?.key)])
+	if(details?.player_actions)
+		for(var/datum/action/action in details.player_actions)
+			action.Remove(src)
+	// remove any actions not transferred in ghostize or removed above
+	QDEL_LIST(actions)
 	..()
 	return QDEL_HINT_QUEUE
 
@@ -232,7 +249,7 @@ GLOBAL_VAR_INIT(mobids, 1)
  * * deaf_message (optional) is what deaf people will see.
  * * hearing_distance (optional) is the range, how many tiles away the message can be heard.
  */
-/atom/proc/audible_message(message, deaf_message, hearing_distance = DEFAULT_MESSAGE_RANGE, self_message, runechat_message = null, log_seen = NONE, log_seen_msg = null, list/ignored_mobs)
+/atom/proc/audible_message(message, deaf_message, hearing_distance = DEFAULT_MESSAGE_RANGE, self_message, runechat_message = null, log_seen = NONE, log_seen_msg = null, list/ignored_mobs, custom_spans = list("emote"))
 	var/list/hearers = hearers(hearing_distance, src) // get_hearers_in_view is slower because we don't care about SCOMs and etc here
 	if(!islist(ignored_mobs))
 		ignored_mobs = list(ignored_mobs)
@@ -242,7 +259,7 @@ GLOBAL_VAR_INIT(mobids, 1)
 	for(var/mob/M in hearers)
 		M.show_message(message, MSG_AUDIBLE, deaf_message, MSG_VISUAL)
 		if(runechat_message && M.can_see_runechat(src) && M.can_hear())
-			M.create_chat_message(src, raw_message = runechat_message, spans = list("emote"))
+			M.create_chat_message(src, raw_message = runechat_message, spans = custom_spans)
 	if(log_seen)
 		log_seen(src, null, hearers, (log_seen_msg ? log_seen_msg : message), log_seen)
 
@@ -316,8 +333,8 @@ GLOBAL_VAR_INIT(mobids, 1)
  * * deaf_message (optional) is what deaf people will see.
  * * hearing_distance (optional) is the range, how many tiles away the message can be heard.
  */
-/mob/audible_message(message, deaf_message, hearing_distance = DEFAULT_MESSAGE_RANGE, self_message, runechat_message = null, log_seen = NONE, log_seen_msg = null, list/ignored_mobs)
-	. = ..(message, deaf_message, hearing_distance, self_message, runechat_message, log_seen, log_seen_msg, ignored_mobs)
+/mob/audible_message(message, deaf_message, hearing_distance = DEFAULT_MESSAGE_RANGE, self_message, runechat_message = null, log_seen = NONE, log_seen_msg = null, list/ignored_mobs, custom_spans = list("emote"))
+	. = ..(message, deaf_message, hearing_distance, self_message, runechat_message, log_seen, log_seen_msg, ignored_mobs, custom_spans)
 	if(self_message)
 		show_message(self_message, MSG_AUDIBLE, deaf_message, MSG_VISUAL)
 
@@ -958,7 +975,8 @@ GLOBAL_VAR_INIT(mobids, 1)
 	var/is_dinghy_buckled = istype(buckled, /obj/vehicle/ridden/dinghy)
 	if(!animal_mount && !(mobility_flags & MOBILITY_MOVE) && !is_dinghy_buckled)
 		return FALSE
-	if(world.time < last_dir_change + 5)
+	var/turn_cooldown = animal_mount ? 2 : 5
+	if(world.time < last_dir_change + turn_cooldown)
 		return
 	if(A && pulledby && pulledby.grab_state >= GRAB_AGGRESSIVE) //the reason this isn't a mobility_flags check is because you want them to be able to change dir if you're passively grabbing them
 		// get_cardinal_dir is inconsistent, reuse face_atom code
@@ -1000,7 +1018,12 @@ GLOBAL_VAR_INIT(mobids, 1)
 	set hidden = TRUE
 	if(!can_face())
 		return FALSE
-	apply_face_direction(EAST)
+	var/mob/living/simple_animal/animal_mount = get_buckled_animal_mount()
+	if(animal_mount)
+		rider_look_dir = EAST
+		setDir(EAST)
+	else
+		apply_face_direction(EAST)
 	client.last_turn = world.time + MOB_FACE_DIRECTION_DELAY
 	return TRUE
 
@@ -1009,7 +1032,12 @@ GLOBAL_VAR_INIT(mobids, 1)
 	set hidden = TRUE
 	if(!can_face())
 		return FALSE
-	apply_face_direction(WEST)
+	var/mob/living/simple_animal/animal_mount = get_buckled_animal_mount()
+	if(animal_mount)
+		rider_look_dir = WEST
+		setDir(WEST)
+	else
+		apply_face_direction(WEST)
 	client.last_turn = world.time + MOB_FACE_DIRECTION_DELAY
 	return TRUE
 
@@ -1018,7 +1046,12 @@ GLOBAL_VAR_INIT(mobids, 1)
 	set hidden = TRUE
 	if(!can_face())
 		return FALSE
-	apply_face_direction(NORTH)
+	var/mob/living/simple_animal/animal_mount = get_buckled_animal_mount()
+	if(animal_mount)
+		rider_look_dir = NORTH
+		setDir(NORTH)
+	else
+		apply_face_direction(NORTH)
 	client.last_turn = world.time + MOB_FACE_DIRECTION_DELAY
 	return TRUE
 
@@ -1027,7 +1060,12 @@ GLOBAL_VAR_INIT(mobids, 1)
 	set hidden = TRUE
 	if(!can_face())
 		return FALSE
-	apply_face_direction(SOUTH)
+	var/mob/living/simple_animal/animal_mount = get_buckled_animal_mount()
+	if(animal_mount)
+		rider_look_dir = SOUTH
+		setDir(SOUTH)
+	else
+		apply_face_direction(SOUTH)
 	client.last_turn = world.time + MOB_FACE_DIRECTION_DELAY
 	return TRUE
 
@@ -1061,7 +1099,7 @@ GLOBAL_VAR_INIT(mobids, 1)
 ///Add a spell to the mobs spell list
 /mob/proc/AddSpell(obj/effect/proc_holder/spell/S)
 	mob_spell_list += S
-	S.action.Grant(src)
+	S.action?.Grant(src)
 
 ///Remove a spell from the mobs spell list
 /mob/proc/RemoveSpell(obj/effect/proc_holder/spell/spell)
@@ -1072,6 +1110,9 @@ GLOBAL_VAR_INIT(mobids, 1)
 		if(istype(S, spell))
 			mob_spell_list -= S
 			qdel(S)
+
+/mob/proc/RemoveAllSpells()
+	QDEL_LIST(mob_spell_list)
 
 ///Return any anti magic atom on this mob that matches the magic type
 /mob/proc/anti_magic_check(magic = TRUE, holy = FALSE, tinfoil = FALSE, chargecost = 1, self = FALSE)
@@ -1114,10 +1155,17 @@ GLOBAL_VAR_INIT(mobids, 1)
 	M.pixel_y = initial(M.pixel_y) + height
 	if(M.layer < layer)
 		M.layer = layer + 0.1
+	if(isliving(src))
+		var/mob/living/living_mob = src
+		living_mob.mob_can_dodge = FALSE
+
 ///Call back post unbuckle from a mob, (reset your visual height here)
 /mob/post_unbuckle_mob(mob/living/M)
 	M.layer = initial(M.layer)
 	M.pixel_y = initial(M.pixel_y)
+	if(isliving(src))
+		var/mob/living/living_mob = src
+		living_mob.mob_can_dodge = initial(M.mob_can_dodge)
 
 ///returns the height in pixel the mob should have when buckled to another mob.
 /mob/proc/get_mob_buckling_height(mob/seat)
@@ -1373,14 +1421,14 @@ GLOBAL_VAR_INIT(mobids, 1)
 
 /mob/proc/adjust_hydration(change)
 	if(HAS_TRAIT(src, TRAIT_NOHUNGER))
-		nutrition = HYDRATION_LEVEL_FULL
+		hydration = HYDRATION_LEVEL_FULL
 	hydration = max(0, hydration + change)
 	if(hydration > HYDRATION_LEVEL_FULL)
 		hydration = HYDRATION_LEVEL_FULL
 
 /mob/proc/set_hydration(change)
 	if(HAS_TRAIT(src, TRAIT_NOHUNGER))
-		nutrition = HYDRATION_LEVEL_FULL
+		hydration = HYDRATION_LEVEL_FULL
 	hydration = max(0, change)
 	if(hydration > HYDRATION_LEVEL_FULL)
 		hydration = HYDRATION_LEVEL_FULL

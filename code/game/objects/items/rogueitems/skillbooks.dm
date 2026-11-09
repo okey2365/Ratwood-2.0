@@ -17,7 +17,7 @@
 /obj/item/skillbook/Initialize(mapload)
 	iconval = rand(0,9)//lets us randomize from all our books from books.dmi
 	update_icon()
-	..()
+	return ..()
 
 
 /obj/item/skillbook/update_icon()
@@ -182,7 +182,7 @@
 			choose_skill(user)
 			return
 
-		if(!locate(/obj/structure/table) in src.loc)
+		if(!has_table_surface(src.loc))
 			to_chat(user, span_warning("I need to use a table."))
 			return FALSE
 		if(skill_cap >= subject_skill)

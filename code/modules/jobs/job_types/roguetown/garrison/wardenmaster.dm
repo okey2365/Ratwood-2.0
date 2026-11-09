@@ -21,7 +21,7 @@
 	min_pq = 6
 	max_pq = null
 	cmode_music = 'sound/music/combat_hornofthebeast.ogg'
-	job_traits = list(TRAIT_OUTDOORSMAN, TRAIT_STEELHEARTED, TRAIT_MEDIUMARMOR, TRAIT_DODGEEXPERT, TRAIT_WOODSMAN, TRAIT_SURVIVAL_EXPERT, TRAIT_FUSILIER)
+	job_traits = list(TRAIT_OUTDOORSMAN, TRAIT_STEELHEARTED, TRAIT_MEDIUMARMOR, TRAIT_DODGEEXPERT, TRAIT_WOODSMAN, TRAIT_SURVIVAL_EXPERT, TRAIT_FUSILIER, TRAIT_PERFECT_TRACKER, TRAIT_SLEUTH)
 	job_subclasses = list(
 		/datum/advclass/wardenmaster/wardenmaster
 	)
@@ -129,7 +129,7 @@
 				l_hand = /obj/item/rogueweapon/stoneaxe/oath
 			if("Javelins & Shield")
 				beltr = /obj/item/quiver/javelin/steel
-				backl = /obj/item/rogueweapon/shield/tower/
+				backl = /obj/item/rogueweapon/shield/tower
 			if("Blackhorn Longbow")
 				beltr = /obj/item/quiver/arrows
 				backl = /obj/item/gun/ballistic/revolver/grenadelauncher/bow/longbow/warden
